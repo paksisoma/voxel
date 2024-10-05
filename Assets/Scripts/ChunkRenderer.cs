@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
 using static Constants;
@@ -64,13 +65,16 @@ public class ChunkRenderer : MonoBehaviour
             byte axis = a.Key;
             Dictionary<byte, ulong[]> blocks = a.Value;
 
-            foreach (var b in blocks)
+            foreach (var b in blocks.Where(b => b.Key > 0 && b.Key <= CHUNK_SIZE - 2)) // PADDDING REMOVE
             {
                 byte y = b.Key;
                 ulong[] xz = (ulong[])b.Value.Clone();
 
-                for (byte i = 0; i < xz.Length; i++)
+                for (byte i = 1; i < xz.Length - 1; i++)
                 {
+                    // PADDDING REMOVE
+                    xz[i] = (xz[i] & ~1ul) & ~(1ul << CHUNK_SIZE - 1);
+
                     while (xz[i] != 0)
                     {
                         int trailingZeros = math.tzcnt(xz[i]);
@@ -79,8 +83,11 @@ public class ChunkRenderer : MonoBehaviour
 
                         byte height = 1;
 
-                        for (int j = i + 1; j < xz.Length && (xz[j] & mask) == mask; j++)
+                        for (int j = i + 1; j < xz.Length - 1 && (xz[j] & mask) == mask; j++)
                         {
+                            // PADDDING REMOVE
+                            xz[j] = (xz[j] & ~1ul) & ~(1ul << CHUNK_SIZE - 1);
+
                             xz[j] ^= mask;
                             height++;
                         }
@@ -107,13 +114,16 @@ public class ChunkRenderer : MonoBehaviour
             byte axis = a.Key;
             Dictionary<byte, ulong[]> blocks = a.Value;
 
-            foreach (var b in blocks)
+            foreach (var b in blocks.Where(b => b.Key > 0 && b.Key <= CHUNK_SIZE - 2)) // PADDDING REMOVE
             {
                 byte y = b.Key;
                 ulong[] xz = (ulong[])b.Value.Clone();
 
-                for (byte i = 0; i < xz.Length; i++)
+                for (byte i = 1; i < xz.Length - 1; i++)
                 {
+                    // PADDDING REMOVE
+                    xz[i] = (xz[i] & ~1ul) & ~(1ul << CHUNK_SIZE - 1);
+
                     while (xz[i] != 0)
                     {
                         int trailingZeros = math.tzcnt(xz[i]);
@@ -122,8 +132,11 @@ public class ChunkRenderer : MonoBehaviour
 
                         byte height = 1;
 
-                        for (int j = i + 1; j < xz.Length && (xz[j] & mask) == mask; j++)
+                        for (int j = i + 1; j < xz.Length - 1 && (xz[j] & mask) == mask; j++)
                         {
+                            // PADDDING REMOVE
+                            xz[j] = (xz[j] & ~1ul) & ~(1ul << CHUNK_SIZE - 1);
+
                             xz[j] ^= mask;
                             height++;
                         }

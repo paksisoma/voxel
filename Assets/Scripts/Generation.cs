@@ -1,4 +1,5 @@
 using UnityEngine;
+using static Constants;
 
 public class Generation : MonoBehaviour
 {
@@ -14,20 +15,20 @@ public class Generation : MonoBehaviour
         {
             for (int j = 0; j < 5; j++)
             {
-                int aX = i * 63;
-                int aZ = j * 63;
+                int aX = i * (CHUNK_SIZE - 2);
+                int aZ = j * (CHUNK_SIZE - 2);
 
                 Chunk chunk = gameObject.AddComponent<Chunk>();
 
                 chunk.Initialize(aX, 0, aZ);
 
-                for (byte x = 0; x < 63; x++)
+                for (byte x = 0; x < CHUNK_SIZE; x++)
                 {
-                    for (byte z = 0; z < 63; z++)
+                    for (byte z = 0; z < CHUNK_SIZE; z++)
                     {
                         byte height = Noise(aX + x, aZ + z);
 
-                        for (byte y = 0; y < Mathf.Min(height, 63); y++)
+                        for (byte y = 0; y < Mathf.Min(height, CHUNK_SIZE); y++)
                         {
                             chunk.SetBlock(x, y, z, BlockType.Stone);
                         }
