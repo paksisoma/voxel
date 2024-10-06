@@ -12,13 +12,19 @@ public class Chunk : MonoBehaviour
 
     private Dictionary<BlockType, ChunkRenderer> renderers = new Dictionary<BlockType, ChunkRenderer>();
 
-    private int relativeX, relativeY, relativeZ;
+    public Vector3Int relativePosition { get; private set; }
+    public Vector3Int chunkPosition { get; private set; }
 
-    public void Initialize(int relativeX, int relativeY, int relativeZ)
+    public void Initialize(Vector3Int relativePosition, Vector3Int chunkPosition)
     {
-        this.relativeX = relativeX;
-        this.relativeY = relativeY;
-        this.relativeZ = relativeZ;
+        this.relativePosition = relativePosition;
+        this.chunkPosition = chunkPosition;
+    }
+
+    void OnDestroy()
+    {
+        foreach (var render in renderers)
+            Destroy(render.Value);
     }
 
     public void SetBlock(byte x, byte y, byte z, BlockType blockType)
@@ -90,7 +96,7 @@ public class Chunk : MonoBehaviour
                         if (!renderers.TryGetValue(blockType, out ChunkRenderer renderer))
                         {
                             renderers[blockType] = renderer = gameObject.AddComponent<ChunkRenderer>();
-                            renderers[blockType].Initialize(blockType, relativeX, relativeY, relativeZ);
+                            renderers[blockType].Initialize(blockType, relativePosition.x, relativePosition.y, relativePosition.z);
                         }
 
                         renderers[blockType].AddData(axis, x, y, z);

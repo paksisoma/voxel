@@ -12,6 +12,7 @@ public class ChunkRenderer : MonoBehaviour
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private MeshCollider meshCollider;
+    private GameObject meshObject;
 
     private Dictionary<byte, Dictionary<byte, ulong[]>> data = new Dictionary<byte, Dictionary<byte, ulong[]>>(); // Axis, y, x, z
 
@@ -19,14 +20,19 @@ public class ChunkRenderer : MonoBehaviour
 
     private void Awake()
     {
-        GameObject gameObject = new GameObject();
+        meshObject = new GameObject();
 
         mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 
-        meshFilter = gameObject.AddComponent<MeshFilter>();
-        meshRenderer = gameObject.AddComponent<MeshRenderer>();
-        meshCollider = gameObject.AddComponent<MeshCollider>();
+        meshFilter = meshObject.AddComponent<MeshFilter>();
+        meshRenderer = meshObject.AddComponent<MeshRenderer>();
+        meshCollider = meshObject.AddComponent<MeshCollider>();
+    }
+
+    void OnDestroy()
+    {
+        Destroy(meshObject);
     }
 
     public void Initialize(BlockType blockType, int relativeX, int relativeY, int relativeZ)

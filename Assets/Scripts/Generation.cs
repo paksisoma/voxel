@@ -3,41 +3,108 @@ using static Constants;
 
 public class Generation : MonoBehaviour
 {
-    void Start()
+    public Transform player;
+
+    private Chunk[,] loadedChunks;
+
+    private void Awake()
     {
-        /*for (byte x = 0; x < 63; x++)
-            for (byte y = 0; y < 63; y++)
-                for (byte z = 0; z < 63; z++)
-                    if ((x + y + z) % 2 == 0)
-                        chunk.SetBlock(x, y, z, BlockType.Stone);*/
+        loadedChunks = new Chunk[RENDER_DISTANCE_LENGTH, RENDER_DISTANCE_LENGTH];
+    }
 
-        for (int i = 0; i < 5; i++)
+    void Update()
+    {
+        int playerChunkX = Mathf.FloorToInt(player.position.x / CHUNK_SIZE_NO_PADDING);
+        int playerChunkY = Mathf.FloorToInt(player.position.y / CHUNK_SIZE_NO_PADDING);
+        int playerChunkZ = Mathf.FloorToInt(player.position.z / CHUNK_SIZE_NO_PADDING);
+        Vector3Int playerChunk = new Vector3Int(playerChunkX, playerChunkY, playerChunkZ);
+
+        for (int x = -RENDER_DISTANCE; x <= RENDER_DISTANCE; x++)
         {
-            for (int j = 0; j < 5; j++)
+            for (int z = -RENDER_DISTANCE; z <= RENDER_DISTANCE; z++)
             {
-                int aX = i * (CHUNK_SIZE - 2);
-                int aZ = j * (CHUNK_SIZE - 2);
+                Vector3Int relativePosition = new Vector3Int((x + playerChunkX) * CHUNK_SIZE_NO_PADDING, 0, (z + playerChunkZ) * CHUNK_SIZE_NO_PADDING);
+                Vector3Int chunkPosition = new Vector3Int(relativePosition.x / CHUNK_SIZE_NO_PADDING, relativePosition.y / CHUNK_SIZE_NO_PADDING, relativePosition.z / CHUNK_SIZE_NO_PADDING);
 
-                Chunk chunk = gameObject.AddComponent<Chunk>();
+                // Does this chunk already exist
+                //if (loadedChunks.Cast<Chunk>().Any(chunk => chunk != null && chunk.chunkPosition == chunkPosition)) continue;
+                if (ChunkExists(chunkPosition)) continue;
 
-                chunk.Initialize(aX, 0, aZ);
+                int a, b;
 
-                for (byte x = 0; x < CHUNK_SIZE; x++)
+                // Find a null or far chunk
+                for (int i = 0; i < RENDER_DISTANCE_LENGTH; i++)
                 {
-                    for (byte z = 0; z < CHUNK_SIZE; z++)
+                    for (int j = 0; j < RENDER_DISTANCE_LENGTH; j++)
                     {
-                        byte height = Noise(aX + x, aZ + z);
-
-                        for (byte y = 0; y < Mathf.Min(height, CHUNK_SIZE); y++)
+                        if (loadedChunks[i, j] == null)
                         {
-                            chunk.SetBlock(x, y, z, BlockType.Stone);
+                            a = i;
+                            b = j;
+                            goto FoundNull;
+                        }
+
+                        if (loadedChunks[i, j].chunkPosition.x > playerChunkX + 3 ||
+                            loadedChunks[i, j].chunkPosition.x < playerChunkX - 3 ||
+                            loadedChunks[i, j].chunkPosition.z > playerChunkZ + 3 ||
+                            loadedChunks[i, j].chunkPosition.z < playerChunkZ - 3)
+                        {
+                            a = i;
+                            b = j;
+                            goto FoundFar;
                         }
                     }
                 }
 
-                chunk.Render();
+                // If there is no null or far chunk
+                continue;
+
+                // If there is no null but there is far
+                FoundFar:
+
+                // Destroy old chunk
+                Destroy(loadedChunks[a, b]);
+
+                // If there is null
+                FoundNull:
+
+                // Generate new chunk
+                loadedChunks[a, b] = GenerateChunk(relativePosition, chunkPosition);
             }
         }
+    }
+
+    public bool ChunkExists(Vector3Int chunkPosition)
+    {
+        for (int i = 0; i < RENDER_DISTANCE_LENGTH; i++)
+            for (int j = 0; j < RENDER_DISTANCE_LENGTH; j++)
+                if (loadedChunks[i, j] != null && loadedChunks[i, j].chunkPosition == chunkPosition)
+                    return true;
+
+        return false;
+    }
+
+    private Chunk GenerateChunk(Vector3Int relativePosition, Vector3Int chunkPosition)
+    {
+        Chunk chunk = gameObject.AddComponent<Chunk>();
+        chunk.Initialize(relativePosition, chunkPosition);
+
+        for (byte x = 0; x < CHUNK_SIZE; x++)
+        {
+            for (byte z = 0; z < CHUNK_SIZE; z++)
+            {
+                byte height = Noise(relativePosition.x + x, relativePosition.z + z);
+
+                for (byte y = 0; y < Mathf.Min(height, CHUNK_SIZE); y++)
+                {
+                    chunk.SetBlock(x, y, z, BlockType.Stone);
+                }
+            }
+        }
+
+        chunk.Render();
+
+        return chunk;
     }
 
     byte Noise(int x, int y)
