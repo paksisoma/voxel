@@ -12,9 +12,9 @@ public class Movement : MonoBehaviour
 
     private float verticalVelocity;
 
-    void Start()
+    void Awake()
     {
-        controller = GetComponent<CharacterController>();
+        controller = Player.Instance.controller;
     }
 
     void Update()

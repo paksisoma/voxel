@@ -3,8 +3,6 @@ using static Constants;
 
 public class Generation : MonoBehaviour
 {
-    public Transform player;
-
     private Chunk[,] loadedChunks;
 
     private void Awake()
@@ -14,16 +12,13 @@ public class Generation : MonoBehaviour
 
     void Update()
     {
-        int playerChunkX = Mathf.FloorToInt(player.position.x / CHUNK_SIZE_NO_PADDING);
-        int playerChunkY = Mathf.FloorToInt(player.position.y / CHUNK_SIZE_NO_PADDING);
-        int playerChunkZ = Mathf.FloorToInt(player.position.z / CHUNK_SIZE_NO_PADDING);
-        Vector3Int playerChunk = new Vector3Int(playerChunkX, playerChunkY, playerChunkZ);
+        Vector3Int playerChunk = Player.Instance.chunkPosition;
 
         for (int x = -RENDER_DISTANCE; x <= RENDER_DISTANCE; x++)
         {
             for (int z = -RENDER_DISTANCE; z <= RENDER_DISTANCE; z++)
             {
-                Vector3Int relativePosition = new Vector3Int((x + playerChunkX) * CHUNK_SIZE_NO_PADDING, 0, (z + playerChunkZ) * CHUNK_SIZE_NO_PADDING);
+                Vector3Int relativePosition = new Vector3Int((x + playerChunk.x) * CHUNK_SIZE_NO_PADDING, 0, (z + playerChunk.z) * CHUNK_SIZE_NO_PADDING);
                 Vector3Int chunkPosition = new Vector3Int(relativePosition.x / CHUNK_SIZE_NO_PADDING, relativePosition.y / CHUNK_SIZE_NO_PADDING, relativePosition.z / CHUNK_SIZE_NO_PADDING);
 
                 // Does this chunk already exist
@@ -44,10 +39,10 @@ public class Generation : MonoBehaviour
                             goto FoundNull;
                         }
 
-                        if (loadedChunks[i, j].chunkPosition.x > playerChunkX + 3 ||
-                            loadedChunks[i, j].chunkPosition.x < playerChunkX - 3 ||
-                            loadedChunks[i, j].chunkPosition.z > playerChunkZ + 3 ||
-                            loadedChunks[i, j].chunkPosition.z < playerChunkZ - 3)
+                        if (loadedChunks[i, j].chunkPosition.x > playerChunk.x + 3 ||
+                            loadedChunks[i, j].chunkPosition.x < playerChunk.x - 3 ||
+                            loadedChunks[i, j].chunkPosition.z > playerChunk.z + 3 ||
+                            loadedChunks[i, j].chunkPosition.z < playerChunk.z - 3)
                         {
                             a = i;
                             b = j;

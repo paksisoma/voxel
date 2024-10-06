@@ -253,6 +253,7 @@ GameObject:
   - component: {fileID: 248973182}
   - component: {fileID: 248973181}
   - component: {fileID: 248973180}
+  - component: {fileID: 248973186}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -272,10 +273,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8de0261a9e311644adeb69a9d4618ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _camera: {fileID: 1560936182}
-  speed: 6
-  gravity: -9.81
-  jumpHeight: 1.5
 --- !u!143 &248973181
 CharacterController:
   m_ObjectHideFlags: 0
@@ -390,6 +387,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &248973186
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 248973179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b526a798a5002d48b1fa5aa67db1622, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _camera: {fileID: 1560936182}
+  speed: 6
+  gravity: -9.81
+  jumpHeight: 1.5
 --- !u!1 &945649251
 GameObject:
   m_ObjectHideFlags: 0
@@ -664,7 +677,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76e587f77ce94f541bafb47074263152, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 248973185}
 --- !u!4 &1347858780
 Transform:
   m_ObjectHideFlags: 0
