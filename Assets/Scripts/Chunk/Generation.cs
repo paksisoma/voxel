@@ -39,10 +39,10 @@ public class Generation : MonoBehaviour
                             goto FoundNull;
                         }
 
-                        if (loadedChunks[i, j].chunkPosition.x > playerChunk.x + 3 ||
-                            loadedChunks[i, j].chunkPosition.x < playerChunk.x - 3 ||
-                            loadedChunks[i, j].chunkPosition.z > playerChunk.z + 3 ||
-                            loadedChunks[i, j].chunkPosition.z < playerChunk.z - 3)
+                        if (loadedChunks[i, j].chunkPosition.x > playerChunk.x + RENDER_DISTANCE ||
+                            loadedChunks[i, j].chunkPosition.x < playerChunk.x - RENDER_DISTANCE ||
+                            loadedChunks[i, j].chunkPosition.z > playerChunk.z + RENDER_DISTANCE ||
+                            loadedChunks[i, j].chunkPosition.z < playerChunk.z - RENDER_DISTANCE)
                         {
                             a = i;
                             b = j;
