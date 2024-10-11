@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEngine;
 using static Constants;
 
@@ -10,7 +11,7 @@ public class Generation : MonoBehaviour
         loadedChunks = new Chunk[RENDER_DISTANCE_LENGTH, RENDER_DISTANCE_LENGTH];
     }
 
-    void Update()
+    private void Update()
     {
         Vector3Int playerChunk = Player.Instance.chunkPosition;
 
@@ -58,13 +59,23 @@ public class Generation : MonoBehaviour
                 FoundFar:
 
                 // Destroy old chunk
-                Destroy(loadedChunks[a, b]);
+                Destroy(loadedChunks[a, b].gameObject);
 
                 // If there is null
                 FoundNull:
 
                 // Generate new chunk
-                loadedChunks[a, b] = GenerateChunk(relativePosition, chunkPosition);
+                loadedChunks[a, b] = new Chunk(relativePosition);
+
+                Task.Run(() =>
+                {
+                    loadedChunks[a, b].LoadChunk();
+                    loadedChunks[a, b].CalculateMeshData();
+                })
+                .ContinueWith(task =>
+                {
+                    loadedChunks[a, b].gameObject = CreateObject(loadedChunks[a, b].meshes);
+                }, TaskScheduler.FromCurrentSynchronizationContext());
             }
         }
     }
@@ -79,49 +90,34 @@ public class Generation : MonoBehaviour
         return false;
     }
 
-    private Chunk GenerateChunk(Vector3Int relativePosition, Vector3Int chunkPosition)
+    private GameObject CreateObject(ChunkMesh[] meshes)
     {
-        Chunk chunk = gameObject.AddComponent<Chunk>();
-        chunk.Initialize(relativePosition, chunkPosition);
+        GameObject parentObject = new GameObject("Chunk");
 
-        for (byte x = 0; x < CHUNK_SIZE; x++)
+        for (int i = 0; i < meshes.Length; i++)
         {
-            for (byte z = 0; z < CHUNK_SIZE; z++)
-            {
-                byte height = Noise(relativePosition.x + x, relativePosition.z + z);
+            ChunkMesh chunkMesh = meshes[i];
 
-                for (byte y = 0; y < Mathf.Min(height, CHUNK_SIZE); y++)
-                {
-                    chunk.SetBlock(x, y, z, BlockType.Stone);
-                }
-            }
+            GameObject childObject = new GameObject(chunkMesh.blockType.ToString());
+            childObject.transform.parent = parentObject.transform;
+
+            MeshFilter meshFilter = childObject.AddComponent<MeshFilter>();
+            MeshRenderer meshRenderer = childObject.AddComponent<MeshRenderer>();
+            MeshCollider meshCollider = childObject.AddComponent<MeshCollider>();
+
+            Mesh mesh = new Mesh();
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+
+            mesh.vertices = chunkMesh.vertices;
+            mesh.triangles = chunkMesh.triangles;
+
+            mesh.RecalculateNormals();
+
+            meshRenderer.material = BlockData.BlockProperties[chunkMesh.blockType].material;
+            meshFilter.mesh = mesh;
+            meshCollider.sharedMesh = mesh;
         }
 
-        chunk.Render();
-
-        return chunk;
-    }
-
-    byte Noise(int x, int y)
-    {
-        const byte surfaceBegin = 5;
-
-        float height = 5f * GetNoiseValue(x, y, 30f);
-        height = Mathf.Pow(height, 2);
-
-        return (byte)Mathf.Round(height + surfaceBegin);
-    }
-
-    float GetNoiseValue(float x, float y, float frequency)
-    {
-        float a = x / frequency;
-        float b = y / frequency;
-
-        float height = Mathf.PerlinNoise(a, b);
-
-        height = Mathf.Max(height, 0);
-        height = Mathf.Min(height, 1);
-
-        return height;
+        return parentObject;
     }
 }
