@@ -1,8 +1,10 @@
 using UnityEngine;
 
+[RequireComponent(typeof(CharacterController), typeof(Animator))]
 public class Movement : MonoBehaviour
 {
     private CharacterController controller;
+    private Animator animator;
 
     public Transform _camera;
 
@@ -12,37 +14,60 @@ public class Movement : MonoBehaviour
 
     private float verticalVelocity;
 
+    private float turnSmoothTime = 0.1f;
+    private float turnSmoothVelocity;
+
     void Awake()
     {
         controller = Player.Instance.controller;
+        animator = GetComponent<Animator>();
     }
 
     void Update()
     {
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
-
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
-        Vector3 faceDirection = new Vector3(_camera.forward.x, 0, _camera.forward.z);
-        float cameraAngle = Vector3.SignedAngle(Vector3.forward, faceDirection, Vector3.up);
-        Vector3 moveDirection = Quaternion.Euler(0, cameraAngle, 0) * direction;
+        Vector3 moveDirection = Vector3.zero;
 
+        // Jump, fall
         if (controller.isGrounded)
         {
             verticalVelocity = -2f;
 
             if (Input.GetButtonDown("Jump"))
+            {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                animator.SetBool("isJumping", true);
+            }
+            else
+            {
+                animator.SetBool("isJumping", false);
+            }
         }
         else
         {
             verticalVelocity += gravity * Time.deltaTime;
         }
 
-        Vector3 velocity = moveDirection * speed + Vector3.up * verticalVelocity;
+        // Move
+        if (direction.magnitude >= 0.1f)
+        {
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + _camera.eulerAngles.y;
+            float smoothAngle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
+            transform.rotation = Quaternion.Euler(0f, smoothAngle, 0f);
 
-        transform.rotation = Quaternion.Euler(0f, _camera.localRotation.eulerAngles.y, 0f);
-        controller.Move(velocity * Time.deltaTime);
+            moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
+
+            animator.SetBool("isRunning", true);
+        }
+        else
+        {
+            animator.SetBool("isRunning", false);
+        }
+
+        Vector3 velocity = (moveDirection.normalized * speed + Vector3.up * verticalVelocity) * Time.deltaTime;
+        controller.Move(velocity);
     }
 }
