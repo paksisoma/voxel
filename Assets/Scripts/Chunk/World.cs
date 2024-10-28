@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using static Constants;
@@ -27,33 +26,37 @@ public class World : MonoBehaviour
                 if (!chunks.ContainsKey(chunkPosition))
                 {
                     chunks.Add(chunkPosition, new Dictionary<int, Chunk>());
-                    GenerateVerticalChunk(chunkPosition);
+                    CreateVerticalChunk(chunkPosition);
                 }
             }
         }
 
         // Remove far chunks
-        Vector2Int[] chunkKeys = chunks.Keys.ToArray();
+        var keysToRemove = new List<Vector2Int>();
 
-        for (int i = 0; i < chunkKeys.Length; i++)
+        foreach (var chunkEntry in chunks)
         {
-            if (chunkKeys[i].x > playerChunk.x + RENDER_DISTANCE || chunkKeys[i].x < playerChunk.x - RENDER_DISTANCE || chunkKeys[i].y > playerChunk.z + RENDER_DISTANCE || chunkKeys[i].y < playerChunk.z - RENDER_DISTANCE)
+            var chunkKey = chunkEntry.Key;
+
+            if (chunkKey.x > playerChunk.x + RENDER_DISTANCE || chunkKey.x < playerChunk.x - RENDER_DISTANCE || chunkKey.y > playerChunk.z + RENDER_DISTANCE || chunkKey.y < playerChunk.z - RENDER_DISTANCE)
             {
-                foreach (var chunk in chunks[chunkKeys[i]])
+                foreach (var gameObjectPair in chunkEntry.Value.Values)
                 {
-                    if (chunk.Value.gameObject)
-                    {
-                        Destroy(chunk.Value.gameObject);
-                        chunk.Value.gameObject = null;
-                    }
+                    foreach (BlockType blockType in gameObjectPair.gameObjects.Keys)
+                        Destroy(gameObjectPair.gameObjects[blockType]);
+
+                    gameObjectPair.gameObjects.Clear();
                 }
 
-                chunks.Remove(chunkKeys[i]);
+                keysToRemove.Add(chunkKey);
             }
         }
+
+        foreach (var key in keysToRemove)
+            chunks.Remove(key);
     }
 
-    async void GenerateVerticalChunk(Vector2Int chunkPosition)
+    async void CreateVerticalChunk(Vector2Int chunkPosition)
     {
         Dictionary<int, Chunk> verticalChunks = new Dictionary<int, Chunk>();
 
@@ -83,6 +86,7 @@ public class World : MonoBehaviour
                         while (y < maxBlocks)
                             chunk.SetBlock(x, y++, z, BlockType.Stone);
 
+
                         height -= maxBlocks;
                         relativePosition.y += CHUNK_SIZE_NO_PADDING;
                         chunkY++;
@@ -98,63 +102,58 @@ public class World : MonoBehaviour
                 chunk.CalculateMeshData();
         });
 
-        // Create object on the main thread
         if (chunks.ContainsKey(chunkPosition))
         {
-            foreach (Chunk chunk in chunks[chunkPosition].Values)
-                if (chunk.gameObject)
+            foreach ((int y, Chunk chunk) in verticalChunks)
+            {
+                if (chunks[chunkPosition].ContainsKey(y))
                     return;
 
-            chunks[chunkPosition].Clear();
+                foreach (MeshData meshData in chunk.meshData)
+                    chunk.gameObjects[meshData.blockType] = CreateObject(meshData);
 
-            foreach (var chunk in verticalChunks)
-            {
-                chunks[chunkPosition].Add(chunk.Key, chunk.Value);
-                chunk.Value.gameObject = CreateObject(chunk.Value.meshes);
+                chunks[chunkPosition].Add(y, chunk);
             }
         }
     }
 
-    private GameObject CreateObject(ChunkMesh[] meshes)
+    private GameObject CreateObject(MeshData meshes)
     {
-        GameObject parentObject = new GameObject("Chunk");
+        GameObject gameObject = new GameObject(meshes.blockType.ToString());
 
-        for (int i = 0; i < meshes.Length; i++)
-        {
-            ChunkMesh chunkMesh = meshes[i];
+        MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
+        MeshRenderer meshRenderer = gameObject.AddComponent<MeshRenderer>();
+        MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
 
-            GameObject childObject = new GameObject(chunkMesh.blockType.ToString());
-            childObject.transform.parent = parentObject.transform;
+        Mesh mesh = new Mesh();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 
-            MeshFilter meshFilter = childObject.AddComponent<MeshFilter>();
-            MeshRenderer meshRenderer = childObject.AddComponent<MeshRenderer>();
-            MeshCollider meshCollider = childObject.AddComponent<MeshCollider>();
+        mesh.vertices = meshes.vertices;
+        mesh.triangles = meshes.triangles;
 
-            Mesh mesh = new Mesh();
-            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        mesh.RecalculateNormals();
 
-            mesh.vertices = chunkMesh.vertices;
-            mesh.triangles = chunkMesh.triangles;
+        meshRenderer.material = BlockData.BlockProperties[meshes.blockType].material;
+        meshFilter.mesh = mesh;
+        meshCollider.sharedMesh = mesh;
 
-            mesh.RecalculateNormals();
-
-            meshRenderer.material = BlockData.BlockProperties[chunkMesh.blockType].material;
-            meshFilter.mesh = mesh;
-            meshCollider.sharedMesh = mesh;
-        }
-
-        return parentObject;
+        return gameObject;
     }
 
     int Noise(int x, int y)
     {
-        const int surfaceBegin = 5;
-        float height = 5f * GetNoiseValue(x, y, 30f);
-        height = Mathf.Pow(height, 2);
-        return Mathf.RoundToInt(height + surfaceBegin);
+        x += 10000;
+        y += 10000;
+
+        float a = GetNoiseValue(x, y, 200f, 7f);
+        a += Mathf.PerlinNoise(x, y) * 0.25f * GetNoiseValue(x, y, 50f, 7f);
+
+        a = Mathf.Pow(a, 2.5f);
+
+        return Mathf.RoundToInt(a) + 10;
     }
 
-    float GetNoiseValue(float x, float y, float frequency)
+    float GetNoiseValue(float x, float y, float frequency, float strength)
     {
         float a = x / frequency;
         float b = y / frequency;
@@ -164,6 +163,6 @@ public class World : MonoBehaviour
         height = Mathf.Max(height, 0);
         height = Mathf.Min(height, 1);
 
-        return height;
+        return height * strength;
     }
 }
