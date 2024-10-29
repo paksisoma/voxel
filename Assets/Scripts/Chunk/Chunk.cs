@@ -106,33 +106,31 @@ public class Chunk
 
             foreach ((int axis, Dictionary<int, ulong[]> blocks) in dictionary)
             {
-                foreach ((int y, ulong[] xz) in blocks.Where(b => b.Key > 0 && b.Key <= CHUNK_SIZE - 2)) // Remove padding
+                foreach ((int y, ulong[] bits) in blocks.Where(b => b.Key > 0 && b.Key <= CHUNK_SIZE - 2)) // Remove padding
                 {
+                    ulong[] xz = (ulong[])bits.Clone();
+
                     for (int i = 1; i < xz.Length - 1; i++)
                     {
-                        ulong a = xz[i];
+                        xz[i] = (xz[i] & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
 
-                        a = (a & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
-
-                        while (a != 0)
+                        while (xz[i] != 0)
                         {
-                            int trailingZeros = math.tzcnt(a);
-                            int trailingOnes = math.tzcnt(~a >> trailingZeros);
+                            int trailingZeros = math.tzcnt(xz[i]);
+                            int trailingOnes = math.tzcnt(~xz[i] >> trailingZeros);
                             ulong mask = ((1ul << trailingOnes) - 1ul) << trailingZeros;
 
                             int height = 1;
 
                             for (int j = i + 1; j < xz.Length - 1 && (xz[j] & mask) == mask; j++)
                             {
-                                ulong b = xz[j];
+                                xz[j] = (xz[j] & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
 
-                                b = (b & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
-
-                                b ^= mask;
+                                xz[j] ^= mask;
                                 height++;
                             }
 
-                            a ^= mask;
+                            xz[i] ^= mask;
 
                             trianglesLength += 6;
                             verticesLength += 4;
@@ -147,33 +145,32 @@ public class Chunk
             // Add data to array
             foreach ((int axis, Dictionary<int, ulong[]> blocks) in dictionary)
             {
-                foreach ((int y, ulong[] xz) in blocks.Where(b => b.Key > 0 && b.Key <= CHUNK_SIZE - 2)) // Remove padding
+                foreach ((int y, ulong[] xz /*bits*/) in blocks.Where(b => b.Key > 0 && b.Key <= CHUNK_SIZE - 2)) // Remove padding
                 {
+                    // Only need if we don't want to overwrite the values
+                    // ulong[] xz = (ulong[])bits.Clone();
+
                     for (int i = 1; i < xz.Length - 1; i++)
                     {
-                        ulong a = xz[i];
+                        xz[i] = (xz[i] & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
 
-                        a = (a & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
-
-                        while (a != 0)
+                        while (xz[i] != 0)
                         {
-                            int trailingZeros = math.tzcnt(a);
-                            int trailingOnes = math.tzcnt(~a >> trailingZeros);
+                            int trailingZeros = math.tzcnt(xz[i]);
+                            int trailingOnes = math.tzcnt(~xz[i] >> trailingZeros);
                             ulong mask = ((1ul << trailingOnes) - 1ul) << trailingZeros;
 
                             int height = 1;
 
                             for (int j = i + 1; j < xz.Length - 1 && (xz[j] & mask) == mask; j++)
                             {
-                                ulong b = xz[j];
+                                xz[j] = (xz[j] & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
 
-                                b = (b & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
-
-                                b ^= mask;
+                                xz[j] ^= mask;
                                 height++;
                             }
 
-                            a ^= mask;
+                            xz[i] ^= mask;
 
                             // Triangles
                             triangles[trianglesIndex] = verticesIndex;
