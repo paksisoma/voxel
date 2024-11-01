@@ -1,4 +1,6 @@
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using static Constants;
@@ -26,7 +28,7 @@ public class World : MonoBehaviour
                 if (!chunks.ContainsKey(chunkPosition))
                 {
                     chunks.Add(chunkPosition, new Dictionary<int, Chunk>());
-                    CreateVerticalChunk(chunkPosition);
+                    CreateVerticalChunk(chunkPosition).Forget();
                 }
             }
         }
@@ -56,64 +58,71 @@ public class World : MonoBehaviour
             chunks.Remove(key);
     }
 
-    async void CreateVerticalChunk(Vector2Int chunkPosition)
+    private async UniTask CreateVerticalChunk(Vector2Int chunkPosition)
     {
-        Dictionary<int, Chunk> verticalChunks = new Dictionary<int, Chunk>();
+        Vector3Int relativePosition = new Vector3Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, 0, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
 
-        await Task.Run(() =>
+        // Height map
+        int[,] heightMap = new int[CHUNK_SIZE, CHUNK_SIZE];
+        int heightMapMax = 0;
+
+        Parallel.For(0, CHUNK_SIZE, x =>
         {
-            Vector3Int relativePosition = new Vector3Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, 0, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
-
-            for (byte x = 0; x < CHUNK_SIZE; x++)
+            for (int z = 0; z < CHUNK_SIZE; z++)
             {
-                for (byte z = 0; z < CHUNK_SIZE; z++)
+                int height = Noise(relativePosition.x + x, relativePosition.z + z);
+                heightMap[x, z] = height;
+
+                int initialMax;
+                do
                 {
-                    int height = Noise(relativePosition.x + x, relativePosition.z + z);
-                    byte chunkY = 0;
-
-                    relativePosition.y = 0;
-
-                    while (height > 0)
-                    {
-                        byte y = 0;
-                        int maxBlocks = Mathf.Min(height, CHUNK_SIZE);
-
-                        if (!verticalChunks.ContainsKey(chunkY))
-                            verticalChunks.Add(chunkY, new Chunk(relativePosition));
-
-                        Chunk chunk = verticalChunks[chunkY];
-
-                        while (y < maxBlocks)
-                            chunk.SetBlock(x, y++, z, BlockType.Stone);
-
-
-                        height -= maxBlocks;
-                        relativePosition.y += CHUNK_SIZE_NO_PADDING;
-                        chunkY++;
-
-                        if (maxBlocks == CHUNK_SIZE)
-                            height += 2;
-                    }
+                    initialMax = heightMapMax;
+                    if (height <= initialMax) break;
                 }
+                while (Interlocked.CompareExchange(ref heightMapMax, height, initialMax) != initialMax);
             }
-
-            // Calculate mesh data
-            foreach (Chunk chunk in verticalChunks.Values)
-                chunk.CalculateMeshData();
         });
 
-        if (chunks.ContainsKey(chunkPosition))
+        await UniTask.Yield();
+
+        // Generate chunks
+        int chunkHeight = (heightMapMax / CHUNK_SIZE_NO_PADDING) + 1;
+
+        for (int i = 0; i < chunkHeight; i++)
         {
-            foreach ((int y, Chunk chunk) in verticalChunks)
+            int relativeHeight = CHUNK_SIZE_NO_PADDING * i;
+
+            Chunk chunk = new Chunk(new Vector3Int(relativePosition.x, relativeHeight, relativePosition.z));
+
+            await UniTask.RunOnThreadPool(() =>
             {
-                if (chunks[chunkPosition].ContainsKey(y))
-                    return;
+                for (int x = 0; x < CHUNK_SIZE; x++)
+                {
+                    for (int z = 0; z < CHUNK_SIZE; z++)
+                    {
+                        int height = Mathf.Min(heightMap[x, z] - relativeHeight, CHUNK_SIZE);
+
+                        for (int y = 0; y < height; y++)
+                        {
+                            chunk.SetBlock(x, y, z, BlockType.Stone);
+                        }
+                    }
+                }
+
+                chunk.CalculateMeshData();
+            });
+
+            // Add chunk to chunks dictionary and create meshes
+            if (chunks.ContainsKey(chunkPosition) && !chunks[chunkPosition].ContainsKey(i - 1))
+            {
+                chunks[chunkPosition].Add(i - 1, chunk);
 
                 foreach (MeshData meshData in chunk.meshData)
-                    chunk.gameObjects[meshData.blockType] = CreateObject(meshData);
-
-                chunks[chunkPosition].Add(y, chunk);
+                    if (meshData.vertices.Length > 0)
+                        chunk.gameObjects[meshData.blockType] = CreateObject(meshData);
             }
+
+            await UniTask.Yield();
         }
     }
 
@@ -140,7 +149,7 @@ public class World : MonoBehaviour
         return gameObject;
     }
 
-    int Noise(int x, int y)
+    private int Noise(int x, int y)
     {
         x += 10000;
         y += 10000;
@@ -153,7 +162,7 @@ public class World : MonoBehaviour
         return Mathf.RoundToInt(a) + 10;
     }
 
-    float GetNoiseValue(float x, float y, float frequency, float strength)
+    private float GetNoiseValue(float x, float y, float frequency, float strength)
     {
         float a = x / frequency;
         float b = y / frequency;
