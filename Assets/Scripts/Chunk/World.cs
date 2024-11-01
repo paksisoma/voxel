@@ -86,7 +86,8 @@ public class World : MonoBehaviour
         await UniTask.Yield();
 
         // Generate chunks
-        int chunkHeight = (heightMapMax / CHUNK_SIZE_NO_PADDING) + 1;
+        int highestPoint = Mathf.Max(heightMapMax, WATER_HEIGHT);
+        int chunkHeight = (highestPoint / CHUNK_SIZE_NO_PADDING) + 1;
 
         for (int i = 0; i < chunkHeight; i++)
         {
@@ -100,12 +101,18 @@ public class World : MonoBehaviour
                 {
                     for (int z = 0; z < CHUNK_SIZE; z++)
                     {
+                        // Terrain
                         int height = Mathf.Min(heightMap[x, z] - relativeHeight, CHUNK_SIZE);
+                        height = Mathf.Max(height, 0);
 
                         for (int y = 0; y < height; y++)
-                        {
                             chunk.SetBlock(x, y, z, BlockType.Stone);
-                        }
+
+                        // Water
+                        int waterHeight = Mathf.Min(WATER_HEIGHT - relativeHeight, CHUNK_SIZE);
+
+                        for (int y = height; y < waterHeight; y++)
+                            chunk.SetWater(x, y, z);
                     }
                 }
 

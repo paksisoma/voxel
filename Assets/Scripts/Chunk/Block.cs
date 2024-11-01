@@ -6,7 +6,8 @@ public enum BlockType : byte
     Air,
     Grass,
     Dirt,
-    Stone
+    Stone,
+    Water,
 }
 
 public class BlockProperties
@@ -21,6 +22,7 @@ public static class BlockData
         { BlockType.Grass, new BlockProperties { material = Resources.Load("Grass", typeof(Material)) as Material } },
         { BlockType.Dirt, new BlockProperties { material = Resources.Load("Dirt", typeof(Material)) as Material } },
         { BlockType.Stone, new BlockProperties { material = Resources.Load("Stone", typeof(Material)) as Material } },
+        { BlockType.Water, new BlockProperties { material = Resources.Load("Water", typeof(Material)) as Material } },
     };
 }
 

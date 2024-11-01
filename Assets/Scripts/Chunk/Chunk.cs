@@ -9,7 +9,8 @@ public class Chunk
 {
     // Blocks position
     private BlockType[,,] typeBlocks = new BlockType[CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE];
-    private ulong[,,] binaryBlocks = new ulong[3, CHUNK_SIZE, CHUNK_SIZE];
+    private ulong[,,] binaryNormalBlocks = new ulong[3, CHUNK_SIZE, CHUNK_SIZE];
+    private ulong[,,] binaryWaterBlocks = new ulong[3, CHUNK_SIZE, CHUNK_SIZE];
 
     // Chunk position
     public readonly Vector3Int relativePosition;
@@ -28,12 +29,20 @@ public class Chunk
     public void SetBlock(int x, int y, int z, BlockType blockType)
     {
         typeBlocks[x, y, z] = blockType;
-        binaryBlocks[0, z, x] |= 1ul << y;
-        binaryBlocks[1, y, z] |= 1ul << x;
-        binaryBlocks[2, y, x] |= 1ul << z;
+        binaryNormalBlocks[0, z, x] |= 1ul << y;
+        binaryNormalBlocks[1, y, z] |= 1ul << x;
+        binaryNormalBlocks[2, y, x] |= 1ul << z;
     }
 
-    public BlockType GetBlockType(int x, int y, int z)
+    public void SetWater(int x, int y, int z)
+    {
+        typeBlocks[x, y, z] = BlockType.Water;
+        binaryWaterBlocks[0, z, x] |= 1ul << y;
+        binaryWaterBlocks[1, y, z] |= 1ul << x;
+        binaryWaterBlocks[2, y, x] |= 1ul << z;
+    }
+
+    public BlockType GetBlock(int x, int y, int z)
     {
         return typeBlocks[x, y, z];
     }
@@ -43,7 +52,7 @@ public class Chunk
         Dictionary<BlockType, Dictionary<int, Dictionary<int, ulong[]>>> data = new Dictionary<BlockType, Dictionary<int, Dictionary<int, ulong[]>>>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void AddData(int x, int z, int axis, ulong bits)
+        void AddNormalData(int x, int z, int axis, ulong bits)
         {
             while (bits != 0)
             {
@@ -52,9 +61,9 @@ public class Chunk
 
                 BlockType blockType = axis switch
                 {
-                    0 or 1 => GetBlockType(x, y, z),
-                    2 or 3 => GetBlockType(y, z, x),
-                    _ => GetBlockType(x, z, y)
+                    0 or 1 => GetBlock(x, y, z),
+                    2 or 3 => GetBlock(y, z, x),
+                    _ => GetBlock(x, z, y)
                 };
 
                 if (!data.TryGetValue(blockType, out var a))
@@ -70,6 +79,27 @@ public class Chunk
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void AddWaterData(int x, int z, int axis, ulong bits)
+        {
+            while (bits != 0)
+            {
+                int y = math.tzcnt(bits);
+                bits &= bits - 1;
+
+                if (!data.TryGetValue(BlockType.Water, out var a))
+                    data[BlockType.Water] = a = new Dictionary<int, Dictionary<int, ulong[]>>();
+
+                if (!data[BlockType.Water].TryGetValue(axis, out var b))
+                    data[BlockType.Water][axis] = b = new Dictionary<int, ulong[]>();
+
+                if (!data[BlockType.Water][axis].TryGetValue(y, out var c))
+                    data[BlockType.Water][axis][y] = c = new ulong[CHUNK_SIZE];
+
+                data[BlockType.Water][axis][y][x] |= 1ul << z;
+            }
+        }
+
         // Face culling
         for (int axis = 0; axis < 3; axis++)
         {
@@ -77,15 +107,34 @@ public class Chunk
             {
                 for (int x = 0; x < CHUNK_SIZE; x++)
                 {
-                    ulong bits = binaryBlocks[axis, z, x];
-
-                    ulong right = bits & ~(bits << 1); // Right face culling
-                    ulong left = bits & ~(bits >> 1); // Left face culling
-
                     int doubleAxis = axis * 2;
 
-                    AddData(x, z, doubleAxis, right);
-                    AddData(x, z, doubleAxis + 1, left);
+                    // Simple block
+                    ulong normalBits = binaryNormalBlocks[axis, z, x];
+
+                    ulong normalRight = normalBits & ~(normalBits << 1); // Right face culling
+                    AddNormalData(x, z, doubleAxis, normalRight);
+
+                    ulong normalLeft = normalBits & ~(normalBits >> 1); // Left face culling
+                    AddNormalData(x, z, doubleAxis + 1, normalLeft);
+
+                    // Water block
+                    ulong waterBits = binaryWaterBlocks[axis, z, x];
+
+                    if (waterBits == 0)
+                        continue;
+
+                    ulong waterRight = waterBits & ~(waterBits << 1); // Right face culling
+                    waterRight ^= normalLeft << 1;
+                    AddWaterData(x, z, doubleAxis, waterRight);
+
+                    ulong waterLeft = waterBits & ~(waterBits >> 1); // Left face culling
+
+                    // If not top
+                    if (axis != 0)
+                        waterLeft ^= normalRight >> 1;
+
+                    AddWaterData(x, z, doubleAxis + 1, waterLeft);
                 }
             }
         }
@@ -182,47 +231,52 @@ public class Chunk
                             triangles[trianglesIndex + 5] = verticesIndex + 3;
 
                             // Vertices
+                            Vector3 verticesPosition = relativePosition;
+
                             if (axis == 0) // Bottom
                             {
-                                vertices[verticesIndex] = new Vector3(i, y, trailingZeros) + relativePosition;
-                                vertices[verticesIndex + 1] = new Vector3(i + height, y, trailingZeros) + relativePosition;
-                                vertices[verticesIndex + 2] = new Vector3(i + height, y, trailingZeros + trailingOnes) + relativePosition;
-                                vertices[verticesIndex + 3] = new Vector3(i, y, trailingZeros + trailingOnes) + relativePosition;
+                                vertices[verticesIndex] = new Vector3(i, y, trailingZeros) + verticesPosition;
+                                vertices[verticesIndex + 1] = new Vector3(i + height, y, trailingZeros) + verticesPosition;
+                                vertices[verticesIndex + 2] = new Vector3(i + height, y, trailingZeros + trailingOnes) + verticesPosition;
+                                vertices[verticesIndex + 3] = new Vector3(i, y, trailingZeros + trailingOnes) + verticesPosition;
                             }
                             else if (axis == 1) // Top
                             {
-                                vertices[verticesIndex] = new Vector3(i + height, y + 1, trailingZeros) + relativePosition;
-                                vertices[verticesIndex + 1] = new Vector3(i, y + 1, trailingZeros) + relativePosition;
-                                vertices[verticesIndex + 2] = new Vector3(i, y + 1, trailingZeros + trailingOnes) + relativePosition;
-                                vertices[verticesIndex + 3] = new Vector3(i + height, y + 1, trailingZeros + trailingOnes) + relativePosition;
+                                if (blockType == BlockType.Water) // Water block
+                                    verticesPosition.y -= 0.3f;
+
+                                vertices[verticesIndex] = new Vector3(i + height, y + 1, trailingZeros) + verticesPosition;
+                                vertices[verticesIndex + 1] = new Vector3(i, y + 1, trailingZeros) + verticesPosition;
+                                vertices[verticesIndex + 2] = new Vector3(i, y + 1, trailingZeros + trailingOnes) + verticesPosition;
+                                vertices[verticesIndex + 3] = new Vector3(i + height, y + 1, trailingZeros + trailingOnes) + verticesPosition;
                             }
                             else if (axis == 2) // Left
                             {
-                                vertices[verticesIndex] = new Vector3(y, trailingZeros, i) + relativePosition;
-                                vertices[verticesIndex + 1] = new Vector3(y, trailingZeros, i + height) + relativePosition;
-                                vertices[verticesIndex + 2] = new Vector3(y, trailingZeros + trailingOnes, i + height) + relativePosition;
-                                vertices[verticesIndex + 3] = new Vector3(y, trailingZeros + trailingOnes, i) + relativePosition;
+                                vertices[verticesIndex] = new Vector3(y, trailingZeros, i) + verticesPosition;
+                                vertices[verticesIndex + 1] = new Vector3(y, trailingZeros, i + height) + verticesPosition;
+                                vertices[verticesIndex + 2] = new Vector3(y, trailingZeros + trailingOnes, i + height) + verticesPosition;
+                                vertices[verticesIndex + 3] = new Vector3(y, trailingZeros + trailingOnes, i) + verticesPosition;
                             }
                             else if (axis == 3) // Right
                             {
-                                vertices[verticesIndex] = new Vector3(y + 1, trailingZeros, i + height) + relativePosition;
-                                vertices[verticesIndex + 1] = new Vector3(y + 1, trailingZeros, i) + relativePosition;
-                                vertices[verticesIndex + 2] = new Vector3(y + 1, trailingZeros + trailingOnes, i) + relativePosition;
-                                vertices[verticesIndex + 3] = new Vector3(y + 1, trailingZeros + trailingOnes, i + height) + relativePosition;
+                                vertices[verticesIndex] = new Vector3(y + 1, trailingZeros, i + height) + verticesPosition;
+                                vertices[verticesIndex + 1] = new Vector3(y + 1, trailingZeros, i) + verticesPosition;
+                                vertices[verticesIndex + 2] = new Vector3(y + 1, trailingZeros + trailingOnes, i) + verticesPosition;
+                                vertices[verticesIndex + 3] = new Vector3(y + 1, trailingZeros + trailingOnes, i + height) + verticesPosition;
                             }
                             else if (axis == 4) // Back
                             {
-                                vertices[verticesIndex] = new Vector3(i + height, trailingZeros, y) + relativePosition;
-                                vertices[verticesIndex + 1] = new Vector3(i, trailingZeros, y) + relativePosition;
-                                vertices[verticesIndex + 2] = new Vector3(i, trailingZeros + trailingOnes, y) + relativePosition;
-                                vertices[verticesIndex + 3] = new Vector3(i + height, trailingZeros + trailingOnes, y) + relativePosition;
+                                vertices[verticesIndex] = new Vector3(i + height, trailingZeros, y) + verticesPosition;
+                                vertices[verticesIndex + 1] = new Vector3(i, trailingZeros, y) + verticesPosition;
+                                vertices[verticesIndex + 2] = new Vector3(i, trailingZeros + trailingOnes, y) + verticesPosition;
+                                vertices[verticesIndex + 3] = new Vector3(i + height, trailingZeros + trailingOnes, y) + verticesPosition;
                             }
                             else if (axis == 5) // Front
                             {
-                                vertices[verticesIndex] = new Vector3(i, trailingZeros, y + 1) + relativePosition;
-                                vertices[verticesIndex + 1] = new Vector3(i + height, trailingZeros, y + 1) + relativePosition;
-                                vertices[verticesIndex + 2] = new Vector3(i + height, trailingZeros + trailingOnes, y + 1) + relativePosition;
-                                vertices[verticesIndex + 3] = new Vector3(i, trailingZeros + trailingOnes, y + 1) + relativePosition;
+                                vertices[verticesIndex] = new Vector3(i, trailingZeros, y + 1) + verticesPosition;
+                                vertices[verticesIndex + 1] = new Vector3(i + height, trailingZeros, y + 1) + verticesPosition;
+                                vertices[verticesIndex + 2] = new Vector3(i + height, trailingZeros + trailingOnes, y + 1) + verticesPosition;
+                                vertices[verticesIndex + 3] = new Vector3(i, trailingZeros + trailingOnes, y + 1) + verticesPosition;
                             }
 
                             trianglesIndex += 6;
