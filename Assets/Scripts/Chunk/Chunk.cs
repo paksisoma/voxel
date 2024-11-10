@@ -147,11 +147,16 @@ public class Chunk
         foreach ((BlockType blockType, Dictionary<int, Dictionary<int, ulong[]>> dictionary) in data)
         {
             // Calculate array length
+            // Using list would be better but much slower (i think)
             int verticesLength = 0;
-            int trianglesLength = 0;
+            int topTrianglesLength = 0;
+            int sideTrianglesLength = 0;
+            int bottomTrianglesLength = 0;
 
-            int trianglesIndex = 0;
             int verticesIndex = 0;
+            int topTrianglesIndex = 0;
+            int sideTrianglesIndex = 0;
+            int bottomTrianglesIndex = 0;
 
             foreach ((int axis, Dictionary<int, ulong[]> blocks) in dictionary)
             {
@@ -181,7 +186,19 @@ public class Chunk
 
                             xz[i] ^= mask;
 
-                            trianglesLength += 6;
+                            if (axis == 0) // Bottom
+                            {
+                                bottomTrianglesLength += 6;
+                            }
+                            else if (axis == 1) // Top
+                            {
+                                topTrianglesLength += 6;
+                            }
+                            else // Side
+                            {
+                                sideTrianglesLength += 6;
+                            }
+
                             verticesLength += 4;
                         }
                     }
@@ -189,7 +206,10 @@ public class Chunk
             }
 
             Vector3[] vertices = new Vector3[verticesLength];
-            int[] triangles = new int[trianglesLength];
+            int[] topTriangles = new int[topTrianglesLength];
+            int[] sideTriangles = new int[sideTrianglesLength];
+            int[] bottomTriangles = new int[bottomTrianglesLength];
+            Vector2[] uvs = new Vector2[verticesLength];
 
             // Add data to array
             foreach ((int axis, Dictionary<int, ulong[]> blocks) in dictionary)
@@ -221,27 +241,35 @@ public class Chunk
 
                             xz[i] ^= mask;
 
-                            // Triangles
-                            triangles[trianglesIndex] = verticesIndex;
-                            triangles[trianglesIndex + 1] = verticesIndex + 1;
-                            triangles[trianglesIndex + 2] = verticesIndex + 2;
-
-                            triangles[trianglesIndex + 3] = verticesIndex;
-                            triangles[trianglesIndex + 4] = verticesIndex + 2;
-                            triangles[trianglesIndex + 5] = verticesIndex + 3;
-
-                            // Vertices
+                            // Vertices and triangles
                             Vector3 verticesPosition = relativePosition;
 
                             if (axis == 0) // Bottom
                             {
+                                // Vertices
                                 vertices[verticesIndex] = new Vector3(i, y, trailingZeros) + verticesPosition;
                                 vertices[verticesIndex + 1] = new Vector3(i + height, y, trailingZeros) + verticesPosition;
                                 vertices[verticesIndex + 2] = new Vector3(i + height, y, trailingZeros + trailingOnes) + verticesPosition;
                                 vertices[verticesIndex + 3] = new Vector3(i, y, trailingZeros + trailingOnes) + verticesPosition;
+
+                                // Triangles
+                                bottomTriangles[bottomTrianglesIndex++] = verticesIndex;
+                                bottomTriangles[bottomTrianglesIndex++] = verticesIndex + 1;
+                                bottomTriangles[bottomTrianglesIndex++] = verticesIndex + 2;
+
+                                bottomTriangles[bottomTrianglesIndex++] = verticesIndex;
+                                bottomTriangles[bottomTrianglesIndex++] = verticesIndex + 2;
+                                bottomTriangles[bottomTrianglesIndex++] = verticesIndex + 3;
+
+                                // UV
+                                uvs[verticesIndex] = new Vector2(height, 0);
+                                uvs[verticesIndex + 1] = new Vector2(0, 0);
+                                uvs[verticesIndex + 2] = new Vector2(0, trailingOnes);
+                                uvs[verticesIndex + 3] = new Vector2(height, trailingOnes);
                             }
                             else if (axis == 1) // Top
                             {
+                                // Vertices
                                 if (blockType == BlockType.Water) // Water block
                                     verticesPosition.y -= 0.3f;
 
@@ -249,44 +277,122 @@ public class Chunk
                                 vertices[verticesIndex + 1] = new Vector3(i, y + 1, trailingZeros) + verticesPosition;
                                 vertices[verticesIndex + 2] = new Vector3(i, y + 1, trailingZeros + trailingOnes) + verticesPosition;
                                 vertices[verticesIndex + 3] = new Vector3(i + height, y + 1, trailingZeros + trailingOnes) + verticesPosition;
+
+                                // Triangles
+                                topTriangles[topTrianglesIndex++] = verticesIndex;
+                                topTriangles[topTrianglesIndex++] = verticesIndex + 1;
+                                topTriangles[topTrianglesIndex++] = verticesIndex + 2;
+
+                                topTriangles[topTrianglesIndex++] = verticesIndex;
+                                topTriangles[topTrianglesIndex++] = verticesIndex + 2;
+                                topTriangles[topTrianglesIndex++] = verticesIndex + 3;
+
+                                // UV
+                                uvs[verticesIndex] = new Vector2(height, 0);
+                                uvs[verticesIndex + 1] = new Vector2(0, 0);
+                                uvs[verticesIndex + 2] = new Vector2(0, trailingOnes);
+                                uvs[verticesIndex + 3] = new Vector2(height, trailingOnes);
                             }
                             else if (axis == 2) // Left
                             {
+                                // Vertices
                                 vertices[verticesIndex] = new Vector3(y, trailingZeros, i) + verticesPosition;
                                 vertices[verticesIndex + 1] = new Vector3(y, trailingZeros, i + height) + verticesPosition;
                                 vertices[verticesIndex + 2] = new Vector3(y, trailingZeros + trailingOnes, i + height) + verticesPosition;
                                 vertices[verticesIndex + 3] = new Vector3(y, trailingZeros + trailingOnes, i) + verticesPosition;
+
+                                // Triangles
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 1;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 3;
+
+                                // UV
+                                uvs[verticesIndex] = new Vector2(0, 0);
+                                uvs[verticesIndex + 1] = new Vector2(height, 0);
+                                uvs[verticesIndex + 2] = new Vector2(height, trailingOnes);
+                                uvs[verticesIndex + 3] = new Vector2(0, trailingOnes);
                             }
                             else if (axis == 3) // Right
                             {
+                                // Vertices
                                 vertices[verticesIndex] = new Vector3(y + 1, trailingZeros, i + height) + verticesPosition;
                                 vertices[verticesIndex + 1] = new Vector3(y + 1, trailingZeros, i) + verticesPosition;
                                 vertices[verticesIndex + 2] = new Vector3(y + 1, trailingZeros + trailingOnes, i) + verticesPosition;
                                 vertices[verticesIndex + 3] = new Vector3(y + 1, trailingZeros + trailingOnes, i + height) + verticesPosition;
+
+                                // Triangles
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 1;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 3;
+
+                                // UV
+                                uvs[verticesIndex] = new Vector2(0, 0);
+                                uvs[verticesIndex + 1] = new Vector2(height, 0);
+                                uvs[verticesIndex + 2] = new Vector2(height, trailingOnes);
+                                uvs[verticesIndex + 3] = new Vector2(0, trailingOnes);
                             }
                             else if (axis == 4) // Back
                             {
+                                // Vertices
                                 vertices[verticesIndex] = new Vector3(i + height, trailingZeros, y) + verticesPosition;
                                 vertices[verticesIndex + 1] = new Vector3(i, trailingZeros, y) + verticesPosition;
                                 vertices[verticesIndex + 2] = new Vector3(i, trailingZeros + trailingOnes, y) + verticesPosition;
                                 vertices[verticesIndex + 3] = new Vector3(i + height, trailingZeros + trailingOnes, y) + verticesPosition;
+
+                                // Triangles
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 1;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 3;
+
+                                // UV
+                                uvs[verticesIndex] = new Vector2(height, 0);
+                                uvs[verticesIndex + 1] = new Vector2(0, 0);
+                                uvs[verticesIndex + 2] = new Vector2(0, trailingOnes);
+                                uvs[verticesIndex + 3] = new Vector2(height, trailingOnes);
                             }
                             else if (axis == 5) // Front
                             {
+                                // Vertices
                                 vertices[verticesIndex] = new Vector3(i, trailingZeros, y + 1) + verticesPosition;
                                 vertices[verticesIndex + 1] = new Vector3(i + height, trailingZeros, y + 1) + verticesPosition;
                                 vertices[verticesIndex + 2] = new Vector3(i + height, trailingZeros + trailingOnes, y + 1) + verticesPosition;
                                 vertices[verticesIndex + 3] = new Vector3(i, trailingZeros + trailingOnes, y + 1) + verticesPosition;
+
+                                // Triangles
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 1;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 2;
+                                sideTriangles[sideTrianglesIndex++] = verticesIndex + 3;
+
+                                // UV
+                                uvs[verticesIndex] = new Vector2(height, 0);
+                                uvs[verticesIndex + 1] = new Vector2(0, 0);
+                                uvs[verticesIndex + 2] = new Vector2(0, trailingOnes);
+                                uvs[verticesIndex + 3] = new Vector2(height, trailingOnes);
                             }
 
-                            trianglesIndex += 6;
                             verticesIndex += 4;
                         }
                     }
                 }
             }
 
-            meshData[meshDataIndex++] = new MeshData(blockType, vertices, triangles);
+            meshData[meshDataIndex++] = new MeshData(blockType, vertices, topTriangles, sideTriangles, bottomTriangles, uvs);
         }
     }
 }
@@ -295,12 +401,19 @@ public struct MeshData
 {
     public BlockType blockType;
     public Vector3[] vertices;
-    public int[] triangles;
+    // Separating the triangles array only if the block has different materials would be better
+    public int[] topTriangles;
+    public int[] sideTriangles;
+    public int[] bottomTriangles;
+    public Vector2[] uvs;
 
-    public MeshData(BlockType blockType, Vector3[] vertices, int[] triangles)
+    public MeshData(BlockType blockType, Vector3[] vertices, int[] topTriangles, int[] sideTriangles, int[] bottomTriangles, Vector2[] uvs)
     {
         this.blockType = blockType;
         this.vertices = vertices;
-        this.triangles = triangles;
+        this.topTriangles = topTriangles;
+        this.sideTriangles = sideTriangles;
+        this.bottomTriangles = bottomTriangles;
+        this.uvs = uvs;
     }
 }

@@ -7,6 +7,8 @@ using static Constants;
 
 public class World : MonoBehaviour
 {
+    public AnimationCurve curve = AnimationCurve.Linear(0, 0, 1, 1);
+
     private Dictionary<Vector2Int, Dictionary<int, Chunk>> chunks;
 
     private void Awake()
@@ -106,7 +108,23 @@ public class World : MonoBehaviour
                         height = Mathf.Max(height, 0);
 
                         for (int y = 0; y < height; y++)
-                            chunk.SetBlock(x, y, z, BlockType.Stone);
+                        {
+                            if (y == height - 1)
+                            {
+                                if (y + relativeHeight < WATER_HEIGHT)
+                                {
+                                    chunk.SetBlock(x, y, z, BlockType.Sand);
+                                }
+                                else
+                                {
+                                    chunk.SetBlock(x, y, z, BlockType.Grass);
+                                }
+                            }
+                            else
+                            {
+                                chunk.SetBlock(x, y, z, BlockType.Stone);
+                            }
+                        }
 
                         // Water
                         int waterHeight = Mathf.Min(WATER_HEIGHT - relativeHeight, CHUNK_SIZE);
@@ -133,9 +151,10 @@ public class World : MonoBehaviour
         }
     }
 
-    private GameObject CreateObject(MeshData meshes)
+    private GameObject CreateObject(MeshData meshData)
     {
-        GameObject gameObject = new GameObject(meshes.blockType.ToString());
+        GameObject gameObject = new GameObject(meshData.blockType.ToString());
+        gameObject.isStatic = true;
 
         MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
         MeshRenderer meshRenderer = gameObject.AddComponent<MeshRenderer>();
@@ -144,12 +163,18 @@ public class World : MonoBehaviour
         Mesh mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 
-        mesh.vertices = meshes.vertices;
-        mesh.triangles = meshes.triangles;
+        mesh.vertices = meshData.vertices;
+        mesh.uv = meshData.uvs;
+
+        mesh.subMeshCount = 3;
+        mesh.SetTriangles(meshData.topTriangles, 0);
+        mesh.SetTriangles(meshData.sideTriangles, 1);
+        mesh.SetTriangles(meshData.bottomTriangles, 2);
 
         mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
 
-        meshRenderer.material = BlockData.BlockProperties[meshes.blockType].material;
+        meshRenderer.materials = new Material[] { BlockData.BlockProperties[meshData.blockType].topMaterial, BlockData.BlockProperties[meshData.blockType].sideMaterial, BlockData.BlockProperties[meshData.blockType].bottomMaterial };
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
 
@@ -161,24 +186,23 @@ public class World : MonoBehaviour
         x += 10000;
         y += 10000;
 
-        float a = GetNoiseValue(x, y, 200f, 7f);
-        a += Mathf.PerlinNoise(x, y) * 0.25f * GetNoiseValue(x, y, 50f, 7f);
+        float a = GetNoiseValue(x, y, 1000, 7);
+        a += Mathf.PerlinNoise(x, y) * 0.25f * GetNoiseValue(x, y, 100, 7);
 
-        a = Mathf.Pow(a, 2.5f);
+        a = Mathf.Pow(a, 2 + GetNoiseValue(x, y, 100, 1));
 
         return Mathf.RoundToInt(a) + 10;
     }
 
-    private float GetNoiseValue(float x, float y, float frequency, float strength)
+    private float GetNoiseValue(float x, float y, float frequency, float multiply)
     {
         float a = x / frequency;
         float b = y / frequency;
 
         float height = Mathf.PerlinNoise(a, b);
 
-        height = Mathf.Max(height, 0);
-        height = Mathf.Min(height, 1);
+        height = Mathf.Clamp(height, 0, 1);
 
-        return height * strength;
+        return height * multiply;
     }
 }

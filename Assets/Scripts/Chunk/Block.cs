@@ -8,22 +8,38 @@ public enum BlockType : byte
     Dirt,
     Stone,
     Water,
-}
-
-public class BlockProperties
-{
-    public Material material { get; set; }
+    Sand,
 }
 
 public static class BlockData
 {
     public static readonly Dictionary<BlockType, BlockProperties> BlockProperties = new Dictionary<BlockType, BlockProperties>
     {
-        { BlockType.Grass, new BlockProperties { material = Resources.Load("Grass", typeof(Material)) as Material } },
-        { BlockType.Dirt, new BlockProperties { material = Resources.Load("Dirt", typeof(Material)) as Material } },
-        { BlockType.Stone, new BlockProperties { material = Resources.Load("Stone", typeof(Material)) as Material } },
-        { BlockType.Water, new BlockProperties { material = Resources.Load("Water", typeof(Material)) as Material } },
+        { BlockType.Grass, new BlockProperties { topMaterial = GetMaterial("Grass Top"), sideMaterial = GetMaterial("Grass Side"), bottomMaterial = GetMaterial("Dirt") } },
+        { BlockType.Dirt, new BlockProperties { topMaterial = GetMaterial("Dirt"), sideMaterial = GetMaterial("Dirt"), bottomMaterial = GetMaterial("Dirt") } },
+        { BlockType.Stone, new BlockProperties { topMaterial = GetMaterial("Stone"), sideMaterial = GetMaterial("Stone"), bottomMaterial = GetMaterial("Stone") } },
+        { BlockType.Water, new BlockProperties { topMaterial = GetMaterial("Water"), sideMaterial = GetMaterial("Water"), bottomMaterial = GetMaterial("Water") } },
+        { BlockType.Sand, new BlockProperties { topMaterial = GetMaterial("Sand"), sideMaterial = GetMaterial("Sand"), bottomMaterial = GetMaterial("Sand") } },
     };
+
+    private static Material GetMaterial(string filename)
+    {
+        return Resources.Load(filename, typeof(Material)) as Material;
+    }
+}
+
+public struct BlockProperties
+{
+    public Material topMaterial;
+    public Material sideMaterial;
+    public Material bottomMaterial;
+
+    public BlockProperties(Material topMaterial, Material sideMaterial, Material bottomMaterial)
+    {
+        this.topMaterial = topMaterial;
+        this.sideMaterial = sideMaterial;
+        this.bottomMaterial = bottomMaterial;
+    }
 }
 
 public struct Vector3Byte
