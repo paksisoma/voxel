@@ -7,7 +7,7 @@ using static Constants;
 
 public class World : MonoBehaviour
 {
-    public AnimationCurve curve = AnimationCurve.Linear(0, 0, 1, 1);
+    public GameObject tree;
 
     private Dictionary<Vector2Int, Dictionary<int, Chunk>> chunks;
 
@@ -48,6 +48,10 @@ public class World : MonoBehaviour
                 {
                     foreach (BlockType blockType in gameObjectPair.gameObjects.Keys)
                         Destroy(gameObjectPair.gameObjects[blockType]);
+
+                    // Remove trees
+                    foreach (GameObject prefab in gameObjectPair.prefabs)
+                        Destroy(prefab);
 
                     gameObjectPair.gameObjects.Clear();
                 }
@@ -96,6 +100,11 @@ public class World : MonoBehaviour
             int relativeHeight = CHUNK_SIZE_NO_PADDING * i;
 
             Chunk chunk = new Chunk(new Vector3Int(relativePosition.x, relativeHeight, relativePosition.z));
+            List<Vector3> treePositions = new List<Vector3>();
+
+            // Temporary solution
+            int seed = Random.Range(int.MinValue, int.MaxValue);
+            System.Random random = new System.Random(seed);
 
             await UniTask.RunOnThreadPool(() =>
             {
@@ -118,6 +127,9 @@ public class World : MonoBehaviour
                                 else
                                 {
                                     chunk.SetBlock(x, y, z, BlockType.Grass);
+
+                                    if (y != height && y + 1 < CHUNK_SIZE && random.NextDouble() < 0.015f)
+                                        treePositions.Add(new Vector3(x, y + 1, z) + new Vector3Int(relativePosition.x, relativeHeight, relativePosition.z));
                                 }
                             }
                             else
@@ -137,14 +149,23 @@ public class World : MonoBehaviour
                 chunk.CalculateMeshData();
             });
 
-            // Add chunk to chunks dictionary and create meshes
             if (chunks.ContainsKey(chunkPosition) && !chunks[chunkPosition].ContainsKey(i - 1))
             {
+                // Add chunk to chunks dictionary and create meshes
                 chunks[chunkPosition].Add(i - 1, chunk);
 
                 foreach (MeshData meshData in chunk.meshData)
                     if (meshData.vertices.Length > 0)
                         chunk.gameObjects[meshData.blockType] = CreateObject(meshData);
+
+                // Add trees
+                foreach (Vector3 position in treePositions)
+                {
+                    GameObject treeObject = Instantiate(tree, position, Quaternion.identity);
+                    treeObject.isStatic = true;
+                    StaticBatchingUtility.Combine(treeObject);
+                    chunk.prefabs.Add(treeObject);
+                }
             }
 
             await UniTask.Yield();

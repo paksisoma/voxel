@@ -563,7 +563,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 945649251}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.19001384, y: -0.038263354, z: 0.0074113263, w: 0.9810075}
+  m_LocalRotation: {x: 0.18998332, y: -0.042109255, z: 0.008156249, w: 0.98085}
   m_LocalPosition: {x: 0, y: 53, z: -7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -668,6 +668,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76e587f77ce94f541bafb47074263152, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  curve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  tree: {fileID: 5330539537610832871, guid: 8f80670192733ee49b6dfe681d4f38d5, type: 3}
 --- !u!4 &1347858780
 Transform:
   m_ObjectHideFlags: 0
@@ -814,7 +839,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1560936177}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.19001384, y: -0.03826336, z: 0.007411327, w: 0.9810075}
+  m_LocalRotation: {x: 0.18998334, y: -0.04210925, z: 0.008156249, w: 0.98085}
   m_LocalPosition: {x: 0, y: 53, z: -7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

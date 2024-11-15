@@ -17,6 +17,7 @@ public class Chunk
 
     // Game objects
     public Dictionary<BlockType, GameObject> gameObjects = new Dictionary<BlockType, GameObject>();
+    public List<GameObject> prefabs = new List<GameObject>();
 
     // Mesh data
     public MeshData[] meshData { get; private set; }
