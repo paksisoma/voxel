@@ -1,57 +1,44 @@
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
-public enum BlockType : byte
+public static class Block
 {
-    Air,
-    Grass,
-    Dirt,
-    Stone,
-    Water,
-    Sand,
-}
-
-public static class BlockData
-{
-    public static readonly Dictionary<BlockType, BlockProperties> BlockProperties = new Dictionary<BlockType, BlockProperties>
+    public static readonly Dictionary<byte, Material> Materials = new Dictionary<byte, Material>
     {
-        { BlockType.Grass, new BlockProperties { topMaterial = GetMaterial("Grass Top"), sideMaterial = GetMaterial("Grass Side"), bottomMaterial = GetMaterial("Dirt") } },
-        { BlockType.Dirt, new BlockProperties { topMaterial = GetMaterial("Dirt"), sideMaterial = GetMaterial("Dirt"), bottomMaterial = GetMaterial("Dirt") } },
-        { BlockType.Stone, new BlockProperties { topMaterial = GetMaterial("Stone"), sideMaterial = GetMaterial("Stone"), bottomMaterial = GetMaterial("Stone") } },
-        { BlockType.Water, new BlockProperties { topMaterial = GetMaterial("Water"), sideMaterial = GetMaterial("Water"), bottomMaterial = GetMaterial("Water") } },
-        { BlockType.Sand, new BlockProperties { topMaterial = GetMaterial("Sand"), sideMaterial = GetMaterial("Sand"), bottomMaterial = GetMaterial("Sand") } },
+        { 1, GetMaterial("Grass Top") },
+        { 2, GetMaterial("Grass Side") },
+        { 3, GetMaterial("Dirt") },
+        { 4, GetMaterial("Stone") },
+        { 5, GetMaterial("Water") },
+        { 6, GetMaterial("Sand") },
+    };
+
+    public static readonly UnsafeHashMap<byte, BlockProperties> blockProperties = new UnsafeHashMap<byte, BlockProperties>(10, Allocator.Persistent)
+    {
+        { 1, new BlockProperties(1, 2, 3) }, // Grass
+        { 2, new BlockProperties(4, 4, 4) }, // Stone
+        { 3, new BlockProperties(5, 5, 5) }, // Water
+        { 4, new BlockProperties(6, 6, 6) }, // Sand
     };
 
     private static Material GetMaterial(string filename)
     {
         return Resources.Load(filename, typeof(Material)) as Material;
     }
-}
 
-public struct BlockProperties
-{
-    public Material topMaterial;
-    public Material sideMaterial;
-    public Material bottomMaterial;
-
-    public BlockProperties(Material topMaterial, Material sideMaterial, Material bottomMaterial)
+    public struct BlockProperties
     {
-        this.topMaterial = topMaterial;
-        this.sideMaterial = sideMaterial;
-        this.bottomMaterial = bottomMaterial;
-    }
-}
+        public readonly byte top;
+        public readonly byte side;
+        public readonly byte bottom;
 
-public struct Vector3Byte
-{
-    public byte x;
-    public byte y;
-    public byte z;
-
-    public Vector3Byte(byte x, byte y, byte z)
-    {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        public BlockProperties(byte top, byte side, byte bottom)
+        {
+            this.top = top;
+            this.side = side;
+            this.bottom = bottom;
+        }
     }
 }

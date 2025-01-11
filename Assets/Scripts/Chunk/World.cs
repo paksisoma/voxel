@@ -1,23 +1,31 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Linq;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using static Constants;
 
 public class World : MonoBehaviour
 {
-    public GameObject tree;
+    public Dictionary<Vector2Int, Chunk[]> chunks = new Dictionary<Vector2Int, Chunk[]>();
+    public List<Vector2Int> chunkQueue = new List<Vector2Int>();
 
-    private Dictionary<Vector2Int, Dictionary<int, Chunk>> chunks;
+    private GameObject chunksParent;
+    private bool render = false;
 
     private void Awake()
     {
-        chunks = new Dictionary<Vector2Int, Dictionary<int, Chunk>>();
+        chunksParent = GameObject.Find("Chunks");
     }
 
-    private void Update()
+    void Update()
     {
+        if (render)
+            return;
+
         Vector3Int playerChunk = Player.Instance.chunkPosition;
 
         // Generate near chunk if not exists
@@ -27,203 +35,193 @@ public class World : MonoBehaviour
             {
                 Vector2Int chunkPosition = new Vector2Int(playerChunk.x + x, playerChunk.z + z);
 
-                if (!chunks.ContainsKey(chunkPosition))
-                {
-                    chunks.Add(chunkPosition, new Dictionary<int, Chunk>());
-                    CreateVerticalChunk(chunkPosition).Forget();
-                }
+                if (!chunks.ContainsKey(chunkPosition) && !chunkQueue.Contains(chunkPosition))
+                    chunkQueue.Add(chunkPosition);
             }
         }
 
         // Remove far chunks
-        var keysToRemove = new List<Vector2Int>();
+        List<Vector2Int> keysToRemove = new List<Vector2Int>();
 
-        foreach (var chunkEntry in chunks)
+        foreach ((Vector2Int chunkPosition, Chunk[] verticalChunks) in chunks)
         {
-            var chunkKey = chunkEntry.Key;
-
-            if (chunkKey.x > playerChunk.x + RENDER_DISTANCE || chunkKey.x < playerChunk.x - RENDER_DISTANCE || chunkKey.y > playerChunk.z + RENDER_DISTANCE || chunkKey.y < playerChunk.z - RENDER_DISTANCE)
+            if (chunkPosition.x > playerChunk.x + RENDER_DISTANCE || chunkPosition.x < playerChunk.x - RENDER_DISTANCE || chunkPosition.y > playerChunk.z + RENDER_DISTANCE || chunkPosition.y < playerChunk.z - RENDER_DISTANCE)
             {
-                foreach (var gameObjectPair in chunkEntry.Value.Values)
-                {
-                    foreach (BlockType blockType in gameObjectPair.gameObjects.Keys)
-                        Destroy(gameObjectPair.gameObjects[blockType]);
+                // Destroy meshes
+                for (int i = 0; i < verticalChunks.Length; i++)
+                    Destroy(verticalChunks[i].mesh);
 
-                    // Remove trees
-                    foreach (GameObject prefab in gameObjectPair.prefabs)
-                        Destroy(prefab);
-
-                    gameObjectPair.gameObjects.Clear();
-                }
-
-                keysToRemove.Add(chunkKey);
+                keysToRemove.Add(chunkPosition);
             }
         }
 
         foreach (var key in keysToRemove)
+        {
             chunks.Remove(key);
+            chunkQueue.Remove(key);
+        }
+
+        chunkQueue = chunkQueue.OrderBy(chunk => Vector2Int.Distance(chunk, new Vector2Int(playerChunk.x, playerChunk.z))).ToList();
+        _ = RenderChunks();
     }
 
-    private async UniTask CreateVerticalChunk(Vector2Int chunkPosition)
+    async UniTask RenderChunks()
     {
-        Vector3Int relativePosition = new Vector3Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, 0, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
+        render = true;
+
+        foreach (var chunkPosition in chunkQueue)
+        {
+            if (!chunks.ContainsKey(chunkPosition))
+            {
+                GenerateChunk(chunkPosition);
+                await UniTask.Yield();
+            }
+        }
+
+        render = false;
+    }
+
+    void OnApplicationQuit()
+    {
+        foreach (Transform child in chunksParent.transform)
+            DestroyImmediate(child.gameObject);
+    }
+
+    void GenerateChunk(Vector2Int chunkPosition)
+    {
+        Vector2Int position = new Vector2Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
+        UnityEngine.Random.InitState(chunkPosition.x.GetHashCode() * chunkPosition.y.GetHashCode());
 
         // Height map
-        int[,] heightMap = new int[CHUNK_SIZE, CHUNK_SIZE];
-        int heightMapMax = 0;
+        NativeArray<int> heightMap = new NativeArray<int>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent);
 
-        Parallel.For(0, CHUNK_SIZE, x =>
+        NoiseJob job = new NoiseJob
         {
-            for (int z = 0; z < CHUNK_SIZE; z++)
-            {
-                int height = Noise(relativePosition.x + x, relativePosition.z + z);
-                heightMap[x, z] = height;
+            HeightMap = heightMap,
+            RelativePosition = new int2(position.x, position.y),
+        };
 
-                int initialMax;
-                do
-                {
-                    initialMax = heightMapMax;
-                    if (height <= initialMax) break;
-                }
-                while (Interlocked.CompareExchange(ref heightMapMax, height, initialMax) != initialMax);
-            }
-        });
+        job.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64).Complete();
 
-        await UniTask.Yield();
-
-        // Generate chunks
-        int highestPoint = Mathf.Max(heightMapMax, WATER_HEIGHT);
-        int chunkHeight = (highestPoint / CHUNK_SIZE_NO_PADDING) + 1;
+        // Init chunks
+        int chunkHeight = Mathf.Max(heightMap.Max() / CHUNK_SIZE_NO_PADDING + 1, MIN_CHUNK_HEIGHT);
+        Chunk[] vChunks = new Chunk[chunkHeight];
 
         for (int i = 0; i < chunkHeight; i++)
         {
-            int relativeHeight = CHUNK_SIZE_NO_PADDING * i;
+            GameObject gameObject = new GameObject();
+            gameObject.transform.position = new Vector3(position.x, i * CHUNK_SIZE_NO_PADDING, position.y);
+            gameObject.transform.SetParent(chunksParent.transform);
+            gameObject.isStatic = true;
 
-            Chunk chunk = new Chunk(new Vector3Int(relativePosition.x, relativeHeight, relativePosition.z));
-            List<Vector3> treePositions = new List<Vector3>();
+            MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
+            MeshRenderer meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
 
-            // Temporary solution
-            int seed = Random.Range(int.MinValue, int.MaxValue);
-            System.Random random = new System.Random(seed);
+            Mesh mesh = new Mesh();
 
-            await UniTask.RunOnThreadPool(() =>
+            meshFilter.mesh = mesh;
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+
+            Chunk chunk = new Chunk(gameObject, mesh, meshFilter, meshRenderer, meshCollider);
+
+            // Set blocks
+            for (int j = 0; j < heightMap.Length; j++)
             {
-                for (int x = 0; x < CHUNK_SIZE; x++)
+                int x = j / CHUNK_SIZE;
+                int z = j % CHUNK_SIZE;
+
+                int height = Mathf.Min(heightMap[j] - (i * CHUNK_SIZE_NO_PADDING), CHUNK_SIZE);
+
+                if (height > 0)
                 {
-                    for (int z = 0; z < CHUNK_SIZE; z++)
+                    for (int y = 0; y < height - 1; y++)
+                        chunk.SetBlock(x, y, z, 2); // Stone
+
+                    if (heightMap[j] < WATER_HEIGHT + 1)
                     {
-                        // Terrain
-                        int height = Mathf.Min(heightMap[x, z] - relativeHeight, CHUNK_SIZE);
-                        height = Mathf.Max(height, 0);
-
-                        for (int y = 0; y < height; y++)
+                        chunk.SetBlock(x, height - 1, z, 4); // Sand
+                    }
+                    else
+                    {
+                        if (heightMap[j] > 115)
                         {
-                            if (y == height - 1)
-                            {
-                                if (y + relativeHeight < WATER_HEIGHT)
-                                {
-                                    chunk.SetBlock(x, y, z, BlockType.Sand);
-                                }
-                                else
-                                {
-                                    chunk.SetBlock(x, y, z, BlockType.Grass);
+                            bool stone = Mathf.Abs(115 - heightMap[j]) >= UnityEngine.Random.Range(0, 20);
 
-                                    if (y != height && y + 1 < CHUNK_SIZE && random.NextDouble() < 0.015f)
-                                        treePositions.Add(new Vector3(x, y + 1, z) + new Vector3Int(relativePosition.x, relativeHeight, relativePosition.z));
-                                }
-                            }
+                            if (stone)
+                                chunk.SetBlock(x, height - 1, z, 2); // Stone
                             else
-                            {
-                                chunk.SetBlock(x, y, z, BlockType.Stone);
-                            }
+                                chunk.SetBlock(x, height - 1, z, 1); // Grass
                         }
-
-                        // Water
-                        int waterHeight = Mathf.Min(WATER_HEIGHT - relativeHeight, CHUNK_SIZE);
-
-                        for (int y = height; y < waterHeight; y++)
-                            chunk.SetWater(x, y, z);
+                        else
+                        {
+                            chunk.SetBlock(x, height - 1, z, 1); // Grass
+                        }
                     }
                 }
 
-                chunk.CalculateMeshData();
-            });
-
-            if (chunks.ContainsKey(chunkPosition) && !chunks[chunkPosition].ContainsKey(i - 1))
-            {
-                // Add chunk to chunks dictionary and create meshes
-                chunks[chunkPosition].Add(i - 1, chunk);
-
-                foreach (MeshData meshData in chunk.meshData)
-                    if (meshData.vertices.Length > 0)
-                        chunk.gameObjects[meshData.blockType] = CreateObject(meshData);
-
-                // Add trees
-                foreach (Vector3 position in treePositions)
-                {
-                    GameObject treeObject = Instantiate(tree, position, Quaternion.identity);
-                    treeObject.isStatic = true;
-                    StaticBatchingUtility.Combine(treeObject);
-                    chunk.prefabs.Add(treeObject);
-                }
+                if (i == 0)
+                    for (int y = height; y < WATER_HEIGHT; y++)
+                        chunk.SetWater(x, y, z); // Water
             }
 
-            await UniTask.Yield();
+            chunk.UpdateMesh();
+            vChunks[i] = chunk;
         }
+
+        heightMap.Dispose();
+
+        chunks.Add(chunkPosition, vChunks);
     }
 
-    private GameObject CreateObject(MeshData meshData)
+    //[BurstCompile]
+    [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
+    private struct NoiseJob : IJobParallelFor
     {
-        GameObject gameObject = new GameObject(meshData.blockType.ToString());
-        gameObject.isStatic = true;
+        [WriteOnly]
+        public NativeArray<int> HeightMap;
 
-        MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
-        MeshRenderer meshRenderer = gameObject.AddComponent<MeshRenderer>();
-        MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
+        [ReadOnly]
+        public int2 RelativePosition;
 
-        Mesh mesh = new Mesh();
-        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        public void Execute(int i)
+        {
+            float2 position = new float2(i / CHUNK_SIZE + RelativePosition.x, i % CHUNK_SIZE + RelativePosition.y);
 
-        mesh.vertices = meshData.vertices;
-        mesh.uv = meshData.uvs;
+            // Mountains
+            float noise1000 = Noise(position, 1000);
 
-        mesh.subMeshCount = 3;
-        mesh.SetTriangles(meshData.topTriangles, 0);
-        mesh.SetTriangles(meshData.sideTriangles, 1);
-        mesh.SetTriangles(meshData.bottomTriangles, 2);
+            float a = 1f * Noise(position, 5000) +
+                            1f * Noise(position, 2000) +
+                            1f * noise1000 * Noise(position, 500) +
+                            0.5f * noise1000 * Noise(position, 100) +
+                            0.25f * noise1000 * Noise(position, 50) +
+                            0.1f * noise1000 * Noise(position, 30);
 
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
+            a /= 1f + 1f + 1f + 0.5f + 0.25f + 0.1f;
+            a = math.pow(a, 4f);
 
-        meshRenderer.materials = new Material[] { BlockData.BlockProperties[meshData.blockType].topMaterial, BlockData.BlockProperties[meshData.blockType].sideMaterial, BlockData.BlockProperties[meshData.blockType].bottomMaterial };
-        meshFilter.mesh = mesh;
-        meshCollider.sharedMesh = mesh;
+            // Hills
+            float2 position10000 = position + 10000;
 
-        return gameObject;
-    }
+            float b = 1f * Noise(position10000, 1000) +
+                    0.5f * Noise(position10000, 500) +
+                    0.25f * Noise(position10000, 250) +
+                    0.1f * Noise(position10000, 250) * Noise(position10000, 50);
 
-    private int Noise(int x, int y)
-    {
-        x += 10000;
-        y += 10000;
+            b /= 1f + 0.5f + 0.25f + 0.1f;
+            b *= 0.5f;
 
-        float a = GetNoiseValue(x, y, 1000, 7);
-        a += Mathf.PerlinNoise(x, y) * 0.25f * GetNoiseValue(x, y, 100, 7);
+            // Height map
+            a += b;
 
-        a = Mathf.Pow(a, 2 + GetNoiseValue(x, y, 100, 1));
+            HeightMap[i] = Mathf.RoundToInt(a * (HIGHEST_BLOCK - 2)) + 2;
+        }
 
-        return Mathf.RoundToInt(a) + 10;
-    }
-
-    private float GetNoiseValue(float x, float y, float frequency, float multiply)
-    {
-        float a = x / frequency;
-        float b = y / frequency;
-
-        float height = Mathf.PerlinNoise(a, b);
-
-        height = Mathf.Clamp(height, 0, 1);
-
-        return height * multiply;
+        public float Noise(float2 position, float frequency)
+        {
+            position /= frequency;
+            return (noise.snoise(position) + 1) / 2;
+        }
     }
 }

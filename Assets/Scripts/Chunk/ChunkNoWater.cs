@@ -8,10 +8,9 @@ using UnityEngine;
 using static Block;
 using static Constants;
 
-public class Chunk
+public class ChunkNoWater
 {
-    private ulong[] solidBlocks = new ulong[3 * CHUNK_SIZE * CHUNK_SIZE];
-    private ulong[] waterBlocks = new ulong[3 * CHUNK_SIZE * CHUNK_SIZE];
+    private ulong[] binaryBlocks = new ulong[3 * CHUNK_SIZE * CHUNK_SIZE];
     private byte[] idBlocks = new byte[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
 
     public GameObject gameObject { get; }
@@ -20,7 +19,7 @@ public class Chunk
     public MeshRenderer meshRenderer { get; }
     public MeshCollider meshCollider { get; }
 
-    public Chunk(GameObject gameObject, Mesh mesh, MeshFilter meshFilter, MeshRenderer meshRenderer, MeshCollider meshCollider)
+    public ChunkNoWater(GameObject gameObject, Mesh mesh, MeshFilter meshFilter, MeshRenderer meshRenderer, MeshCollider meshCollider)
     {
         this.gameObject = gameObject;
         this.mesh = mesh;
@@ -32,17 +31,15 @@ public class Chunk
     public void SetBlock(int x, int y, int z, byte id)
     {
         idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = id;
-        solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] |= 1ul << y;
-        solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] |= 1ul << x;
-        solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] |= 1ul << z;
+        binaryBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] |= 1ul << y;
+        binaryBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] |= 1ul << x;
+        binaryBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] |= 1ul << z;
     }
 
-    public void SetWater(int x, int y, int z)
+    public void SetBlocks(ulong[] binaryBlocks, byte[] idBlocks)
     {
-        idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = 3;
-        waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] |= 1ul << y;
-        waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] |= 1ul << x;
-        waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] |= 1ul << z;
+        this.binaryBlocks = binaryBlocks;
+        this.idBlocks = idBlocks;
     }
 
     public byte GetBlock(int x, int y, int z)
@@ -57,14 +54,12 @@ public class Chunk
         NativeList<Vector2> uvs = new NativeList<Vector2>(Allocator.Persistent);
         NativeList<Segment> segment = new NativeList<Segment>(Allocator.Persistent);
 
-        NativeArray<ulong> sBlocks = new NativeArray<ulong>(solidBlocks, Allocator.Persistent);
-        NativeArray<ulong> wBlocks = new NativeArray<ulong>(waterBlocks, Allocator.Persistent);
+        NativeArray<ulong> bBlocks = new NativeArray<ulong>(binaryBlocks, Allocator.Persistent);
         NativeArray<byte> iBlocks = new NativeArray<byte>(idBlocks, Allocator.Persistent);
 
         MeshJob job = new MeshJob
         {
-            SolidBlocks = sBlocks,
-            WaterBlocks = wBlocks,
+            BinaryBlocks = bBlocks,
             IdBlocks = iBlocks,
             BlockProperties = blockProperties,
             Vertices = vertices,
@@ -75,8 +70,7 @@ public class Chunk
 
         job.Schedule().Complete();
 
-        sBlocks.Dispose();
-        wBlocks.Dispose();
+        bBlocks.Dispose();
         iBlocks.Dispose();
 
         // Material
@@ -113,10 +107,7 @@ public class Chunk
     private struct MeshJob : IJob
     {
         [ReadOnly]
-        public NativeArray<ulong> SolidBlocks;
-
-        [ReadOnly]
-        public NativeArray<ulong> WaterBlocks;
+        public NativeArray<ulong> BinaryBlocks;
 
         [ReadOnly]
         public NativeArray<byte> IdBlocks;
@@ -151,18 +142,20 @@ public class Chunk
                 {
                     for (int x = 0; x < CHUNK_SIZE; x++)
                     {
-                        ulong solidBits = SolidBlocks[(CHUNK_SIZE * CHUNK_SIZE * axis) + (z * CHUNK_SIZE + x)];
-                        ulong waterBits = WaterBlocks[(CHUNK_SIZE * CHUNK_SIZE * axis) + (z * CHUNK_SIZE + x)];
+                        ulong bits = BinaryBlocks[(CHUNK_SIZE * CHUNK_SIZE * axis) + (z * CHUNK_SIZE + x)];
+
+                        if (bits == 0)
+                            continue;
 
                         int axis2 = axis * 2;
 
-                        // Solid right
-                        ulong solidRight = solidBits & ~(solidBits << 1);
+                        // Right
+                        ulong right = bits & ~(bits << 1);
 
-                        while (solidRight != 0)
+                        while (right != 0)
                         {
-                            int y = math.tzcnt(solidRight);
-                            solidRight &= solidRight - 1;
+                            int y = math.tzcnt(right);
+                            right &= right - 1;
 
                             byte id = axis2 switch
                             {
@@ -182,13 +175,13 @@ public class Chunk
                             array[x] |= 1ul << z;
                         }
 
-                        // Solid left
-                        ulong solidLeft = solidBits & ~(solidBits >> 1);
+                        // Left
+                        ulong left = bits & ~(bits >> 1);
 
-                        while (solidLeft != 0)
+                        while (left != 0)
                         {
-                            int y = math.tzcnt(solidLeft);
-                            solidLeft &= solidLeft - 1;
+                            int y = math.tzcnt(left);
+                            left &= left - 1;
 
                             byte id = axis2 switch
                             {
@@ -207,54 +200,13 @@ public class Chunk
 
                             array[x] |= 1ul << z;
                         }
-
-                        // Water right
-                        ulong waterRight = waterBits & ~(waterBits << 1);
-                        waterRight ^= solidLeft << 1;
-
-                        while (waterRight != 0)
-                        {
-                            int y = math.tzcnt(waterRight);
-                            waterRight &= waterRight - 1;
-
-                            BlockData blockData = new BlockData(3, axis2, y);
-
-                            if (!data.TryGetValue(blockData, out var array))
-                            {
-                                array = new NativeArray<ulong>(CHUNK_SIZE, Allocator.Temp);
-                                data.TryAdd(blockData, array);
-                            }
-
-                            array[x] |= 1ul << z;
-                        }
-
-                        // Water left
-                        ulong waterLeft = waterBits & ~(waterBits >> 1);
-
-                        if (axis != 0)
-                            waterLeft ^= solidRight >> 1;
-
-                        while (waterLeft != 0)
-                        {
-                            int y = math.tzcnt(waterLeft);
-                            waterLeft &= waterLeft - 1;
-
-                            BlockData blockData = new BlockData(3, axis2 + 1, y);
-
-                            if (!data.TryGetValue(blockData, out var array))
-                            {
-                                array = new NativeArray<ulong>(CHUNK_SIZE, Allocator.Temp);
-                                data.TryAdd(blockData, array);
-                            }
-
-                            array[x] |= 1ul << z;
-                        }
                     }
                 }
             }
 
             var triangles = new UnsafeHashMap<byte, NativeList<int>>(16, Allocator.Temp);
             int verticesLength = 0;
+
 
             foreach (var item in data)
             {
