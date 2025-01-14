@@ -29,7 +29,7 @@ public class Chunk
         this.meshCollider = meshCollider;
     }
 
-    public void SetBlock(int x, int y, int z, byte id)
+    public void AddSolid(int x, int y, int z, byte id)
     {
         idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = id;
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] |= 1ul << y;
@@ -37,12 +37,49 @@ public class Chunk
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] |= 1ul << z;
     }
 
-    public void SetWater(int x, int y, int z)
+    public void RemoveSolid(int x, int y, int z)
+    {
+        idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = 0;
+        solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] ^= 1ul << y;
+        solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] ^= 1ul << x;
+        solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] ^= 1ul << z;
+    }
+
+    public void AddWater(int x, int y, int z)
     {
         idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = 3;
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] |= 1ul << y;
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] |= 1ul << x;
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] |= 1ul << z;
+    }
+
+    public void RemoveWater(int x, int y, int z)
+    {
+        idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = 0;
+        waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] ^= 1ul << y;
+        waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] ^= 1ul << x;
+        waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] ^= 1ul << z;
+    }
+
+    public void SetBlock(int x, int y, int z, byte id)
+    {
+        if (id == 0)
+        {
+            byte block = idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)];
+
+            if (block == 3)
+                RemoveWater(x, y, z);
+            else if (block > 0)
+                RemoveSolid(x, y, z);
+        }
+        else if (id == 3)
+        {
+            AddWater(x, y, z);
+        }
+        else
+        {
+            AddSolid(x, y, z, id);
+        }
     }
 
     public byte GetBlock(int x, int y, int z)
@@ -78,6 +115,8 @@ public class Chunk
         sBlocks.Dispose();
         wBlocks.Dispose();
         iBlocks.Dispose();
+
+        mesh.Clear();
 
         // Material
         Material[] materials = new Material[segment.Length];

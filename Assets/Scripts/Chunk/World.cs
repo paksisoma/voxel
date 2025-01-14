@@ -10,8 +10,8 @@ using static Constants;
 
 public class World : MonoBehaviour
 {
-    public Dictionary<Vector2Int, Chunk[]> chunks = new Dictionary<Vector2Int, Chunk[]>();
-    public List<Vector2Int> chunkQueue = new List<Vector2Int>();
+    public static Dictionary<Vector2Int, Chunk[]> chunks;
+    private List<Vector2Int> chunkQueue;
 
     private GameObject chunksParent;
     private bool render = false;
@@ -19,6 +19,8 @@ public class World : MonoBehaviour
     private void Awake()
     {
         chunksParent = GameObject.Find("Chunks");
+        chunks = new Dictionary<Vector2Int, Chunk[]>();
+        chunkQueue = new List<Vector2Int>();
     }
 
     void Update()
@@ -65,6 +67,68 @@ public class World : MonoBehaviour
         _ = RenderChunks();
     }
 
+    public static void SetBlock(int x, int y, int z, byte id)
+    {
+        // Chunk position
+        Vector3Int chunkPosition = new Vector3Int(x, y, z);
+
+        if (chunkPosition.x < 0)
+            chunkPosition.x -= CHUNK_SIZE_NO_PADDING - 1;
+
+        if (chunkPosition.z < 0)
+            chunkPosition.z -= CHUNK_SIZE_NO_PADDING - 1;
+
+        chunkPosition /= CHUNK_SIZE_NO_PADDING;
+
+        // Block position
+        Vector3Int blockPosition = (new Vector3Int(x, y, z) - (chunkPosition * CHUNK_SIZE_NO_PADDING)) + new Vector3Int(1, 1, 1);
+
+        // Chunk
+        Chunk chunk = GetChunk(chunkPosition);
+        chunk.SetBlock(blockPosition.x, blockPosition.y, blockPosition.z, id);
+        chunk.UpdateMesh();
+
+        // Neighbour
+        void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int blockPosition, byte id, int axis)
+        {
+            Vector3Int neighbourChunkPosition = chunkPosition;
+            Vector3Int neighbourBlockPosition = blockPosition;
+
+            if (blockPosition[axis] == 1) // Left
+            {
+                neighbourChunkPosition[axis]--;
+                neighbourBlockPosition[axis] = CHUNK_SIZE_NO_PADDING + 1;
+            }
+            else if (blockPosition[axis] == 62) // Right
+            {
+                neighbourChunkPosition[axis]++;
+                neighbourBlockPosition[axis] = 0;
+            }
+            else
+            {
+                return;
+            }
+
+            Chunk neighbourChunk = GetChunk(neighbourChunkPosition);
+            neighbourChunk.SetBlock(neighbourBlockPosition.x, neighbourBlockPosition.y, neighbourBlockPosition.z, id);
+            neighbourChunk.UpdateMesh();
+        }
+
+        UpdateNeighbourBlock(chunkPosition, blockPosition, id, 0); // X
+        UpdateNeighbourBlock(chunkPosition, blockPosition, id, 1); // Y
+        UpdateNeighbourBlock(chunkPosition, blockPosition, id, 2); // Z
+    }
+
+    private static Chunk GetChunk(Vector3Int position)
+    {
+        Vector2Int chunkKey = new Vector2Int(position.x, position.z);
+
+        if (chunks.ContainsKey(chunkKey))
+            return chunks[chunkKey][position.y];
+
+        return null;
+    }
+
     async UniTask RenderChunks()
     {
         render = true;
@@ -109,8 +173,8 @@ public class World : MonoBehaviour
 
         for (int i = 0; i < chunkHeight; i++)
         {
-            GameObject gameObject = new GameObject();
-            gameObject.transform.position = new Vector3(position.x, i * CHUNK_SIZE_NO_PADDING, position.y);
+            GameObject gameObject = new GameObject(chunkPosition.x + "/" + i + "/" + chunkPosition.y);
+            gameObject.transform.position = new Vector3(position.x, i * CHUNK_SIZE_NO_PADDING, position.y) - new Vector3(1.5f, 1.5f, 1.5f);
             gameObject.transform.SetParent(chunksParent.transform);
             gameObject.isStatic = true;
 
@@ -136,11 +200,11 @@ public class World : MonoBehaviour
                 if (height > 0)
                 {
                     for (int y = 0; y < height - 1; y++)
-                        chunk.SetBlock(x, y, z, 2); // Stone
+                        chunk.AddSolid(x, y, z, 2); // Stone
 
                     if (heightMap[j] < WATER_HEIGHT + 1)
                     {
-                        chunk.SetBlock(x, height - 1, z, 4); // Sand
+                        chunk.AddSolid(x, height - 1, z, 4); // Sand
                     }
                     else
                     {
@@ -149,20 +213,20 @@ public class World : MonoBehaviour
                             bool stone = Mathf.Abs(115 - heightMap[j]) >= UnityEngine.Random.Range(0, 20);
 
                             if (stone)
-                                chunk.SetBlock(x, height - 1, z, 2); // Stone
+                                chunk.AddSolid(x, height - 1, z, 2); // Stone
                             else
-                                chunk.SetBlock(x, height - 1, z, 1); // Grass
+                                chunk.AddSolid(x, height - 1, z, 1); // Grass
                         }
                         else
                         {
-                            chunk.SetBlock(x, height - 1, z, 1); // Grass
+                            chunk.AddSolid(x, height - 1, z, 1); // Grass
                         }
                     }
                 }
 
                 if (i == 0)
                     for (int y = height; y < WATER_HEIGHT; y++)
-                        chunk.SetWater(x, y, z); // Water
+                        chunk.AddWater(x, y, z); // Water
             }
 
             chunk.UpdateMesh();
