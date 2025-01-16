@@ -13,12 +13,12 @@ public class World : MonoBehaviour
     public static Dictionary<Vector2Int, Chunk[]> chunks;
     private List<Vector2Int> chunkQueue;
 
-    private GameObject chunksParent;
     private bool render = false;
+
+    public GameObject tree;
 
     private void Awake()
     {
-        chunksParent = GameObject.Find("Chunks");
         chunks = new Dictionary<Vector2Int, Chunk[]>();
         chunkQueue = new List<Vector2Int>();
     }
@@ -49,9 +49,14 @@ public class World : MonoBehaviour
         {
             if (chunkPosition.x > playerChunk.x + RENDER_DISTANCE || chunkPosition.x < playerChunk.x - RENDER_DISTANCE || chunkPosition.y > playerChunk.z + RENDER_DISTANCE || chunkPosition.y < playerChunk.z - RENDER_DISTANCE)
             {
-                // Destroy meshes
+                // Destroy
                 for (int i = 0; i < verticalChunks.Length; i++)
+                {
                     Destroy(verticalChunks[i].mesh);
+
+                    foreach (GameObject prefab in verticalChunks[i].prefabs)
+                        Destroy(prefab);
+                }
 
                 keysToRemove.Add(chunkPosition);
             }
@@ -147,7 +152,7 @@ public class World : MonoBehaviour
 
     void OnApplicationQuit()
     {
-        foreach (Transform child in chunksParent.transform)
+        foreach (Transform child in GlobalReferences.chunks.transform)
             DestroyImmediate(child.gameObject);
     }
 
@@ -156,16 +161,23 @@ public class World : MonoBehaviour
         Vector2Int position = new Vector2Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
         UnityEngine.Random.InitState(chunkPosition.x.GetHashCode() * chunkPosition.y.GetHashCode());
 
-        // Height map
-        NativeArray<int> heightMap = new NativeArray<int>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent);
+        NativeArray<int> heightMap = new NativeArray<int>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Height map
+        NativeArray<float> blueNoise = new NativeArray<float>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Blue noise
 
-        NoiseJob job = new NoiseJob
+        NoiseJob noiseJob = new NoiseJob
         {
             HeightMap = heightMap,
+            BlueNoise = blueNoise,
             RelativePosition = new int2(position.x, position.y),
         };
 
-        job.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64).Complete();
+        noiseJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64).Complete();
+
+        // Tree map
+        NativeArray<bool> treeMap = new NativeArray<bool>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent);
+        TreeJob treeJob = new TreeJob { BlueNoise = blueNoise, TreeMap = treeMap };
+        treeJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64).Complete();
+        blueNoise.Dispose();
 
         // Init chunks
         int chunkHeight = Mathf.Max(heightMap.Max() / CHUNK_SIZE_NO_PADDING + 1, MIN_CHUNK_HEIGHT);
@@ -173,9 +185,11 @@ public class World : MonoBehaviour
 
         for (int i = 0; i < chunkHeight; i++)
         {
+            Vector3 relativePosition = new Vector3(position.x, i * CHUNK_SIZE_NO_PADDING, position.y) - new Vector3(1.5f, 1.5f, 1.5f);
+
             GameObject gameObject = new GameObject(chunkPosition.x + "/" + i + "/" + chunkPosition.y);
-            gameObject.transform.position = new Vector3(position.x, i * CHUNK_SIZE_NO_PADDING, position.y) - new Vector3(1.5f, 1.5f, 1.5f);
-            gameObject.transform.SetParent(chunksParent.transform);
+            gameObject.transform.position = relativePosition;
+            gameObject.transform.SetParent(GlobalReferences.chunks.transform);
             gameObject.isStatic = true;
 
             MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
@@ -208,9 +222,9 @@ public class World : MonoBehaviour
                     }
                     else
                     {
-                        if (heightMap[j] > 115)
+                        if (heightMap[j] > MOUNTAIN_HEIGHT_START)
                         {
-                            bool stone = Mathf.Abs(115 - heightMap[j]) >= UnityEngine.Random.Range(0, 20);
+                            bool stone = Mathf.Abs(MOUNTAIN_HEIGHT_START - heightMap[j]) >= UnityEngine.Random.Range(0, 20);
 
                             if (stone)
                                 chunk.AddSolid(x, height - 1, z, 2); // Stone
@@ -225,8 +239,22 @@ public class World : MonoBehaviour
                 }
 
                 if (i == 0)
+                {
+                    // Tree
+                    if (treeMap[j] && heightMap[j] < MOUNTAIN_HEIGHT_START)
+                    {
+                        GameObject treeObject = Instantiate(tree, relativePosition + new Vector3(x, heightMap[j], z), Quaternion.identity);
+                        treeObject.transform.SetParent(GlobalReferences.trees.transform);
+                        treeObject.isStatic = true;
+                        StaticBatchingUtility.Combine(treeObject);
+                        chunk.prefabs.Add(treeObject);
+                    }
+
+                    // Water
                     for (int y = height; y < WATER_HEIGHT; y++)
-                        chunk.AddWater(x, y, z); // Water
+                        chunk.AddWater(x, y, z);
+                }
+
             }
 
             chunk.UpdateMesh();
@@ -234,6 +262,7 @@ public class World : MonoBehaviour
         }
 
         heightMap.Dispose();
+        treeMap.Dispose();
 
         chunks.Add(chunkPosition, vChunks);
     }
@@ -244,6 +273,9 @@ public class World : MonoBehaviour
     {
         [WriteOnly]
         public NativeArray<int> HeightMap;
+
+        [WriteOnly]
+        public NativeArray<float> BlueNoise;
 
         [ReadOnly]
         public int2 RelativePosition;
@@ -280,12 +312,66 @@ public class World : MonoBehaviour
             a += b;
 
             HeightMap[i] = Mathf.RoundToInt(a * (HIGHEST_BLOCK - 2)) + 2;
+
+            // Blue noise
+            float c = 0;
+
+            if (Noise(position10000, 1000) > 0.5f)
+                c = Noise(position10000, 1);
+
+            BlueNoise[i] = c;
         }
 
         public float Noise(float2 position, float frequency)
         {
             position /= frequency;
             return (noise.snoise(position) + 1) / 2;
+        }
+    }
+
+    //[BurstCompile]
+    [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
+    private struct TreeJob : IJobParallelFor
+    {
+        [ReadOnly]
+        public NativeArray<float> BlueNoise;
+
+        [WriteOnly]
+        public NativeArray<bool> TreeMap;
+
+        public void Execute(int i)
+        {
+            if (BlueNoise[i] == 0)
+                return;
+
+            int xc = i % CHUNK_SIZE;
+            int yc = i / CHUNK_SIZE;
+
+            int radius = 10;
+
+            float max = 0;
+
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    int xn = dx + xc;
+                    int yn = dy + yc;
+
+                    int index = yn * CHUNK_SIZE + xn;
+
+                    if (index >= 0 && index < BlueNoise.Length)
+                    {
+                        float e = BlueNoise[yn * CHUNK_SIZE + xn];
+
+                        if (e > max)
+                            max = e;
+                    }
+                }
+            }
+
+            if (BlueNoise[yc * CHUNK_SIZE + xc] == max)
+                TreeMap[yc * CHUNK_SIZE + xc] = true;
         }
     }
 }

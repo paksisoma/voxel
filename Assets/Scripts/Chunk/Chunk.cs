@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -19,6 +20,8 @@ public class Chunk
     public MeshFilter meshFilter { get; }
     public MeshRenderer meshRenderer { get; }
     public MeshCollider meshCollider { get; }
+
+    public List<GameObject> prefabs = new List<GameObject>();
 
     public Chunk(GameObject gameObject, Mesh mesh, MeshFilter meshFilter, MeshRenderer meshRenderer, MeshCollider meshCollider)
     {
