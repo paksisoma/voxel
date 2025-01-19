@@ -6,14 +6,14 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using static Block;
+using static Blocks;
 using static Constants;
 
 public class Chunk
 {
     private ulong[] solidBlocks = new ulong[3 * CHUNK_SIZE * CHUNK_SIZE];
     private ulong[] waterBlocks = new ulong[3 * CHUNK_SIZE * CHUNK_SIZE];
-    private byte[] idBlocks = new byte[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
+    private int[] idBlocks = new int[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
 
     public GameObject gameObject { get; }
     public Mesh mesh { get; }
@@ -32,7 +32,7 @@ public class Chunk
         this.meshCollider = meshCollider;
     }
 
-    public void AddSolid(int x, int y, int z, byte id)
+    public void AddSolid(int x, int y, int z, int id)
     {
         idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = id;
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] |= 1ul << y;
@@ -64,11 +64,11 @@ public class Chunk
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] ^= 1ul << z;
     }
 
-    public void SetBlock(int x, int y, int z, byte id)
+    public void SetBlock(int x, int y, int z, int id)
     {
         if (id == 0)
         {
-            byte block = idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)];
+            int block = idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)];
 
             if (block == 3)
                 RemoveWater(x, y, z);
@@ -85,7 +85,7 @@ public class Chunk
         }
     }
 
-    public byte GetBlock(int x, int y, int z)
+    public int GetBlock(int x, int y, int z)
     {
         return idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)];
     }
@@ -99,14 +99,14 @@ public class Chunk
 
         NativeArray<ulong> sBlocks = new NativeArray<ulong>(solidBlocks, Allocator.Persistent);
         NativeArray<ulong> wBlocks = new NativeArray<ulong>(waterBlocks, Allocator.Persistent);
-        NativeArray<byte> iBlocks = new NativeArray<byte>(idBlocks, Allocator.Persistent);
+        NativeArray<int> iBlocks = new NativeArray<int>(idBlocks, Allocator.Persistent);
 
         MeshJob job = new MeshJob
         {
             SolidBlocks = sBlocks,
             WaterBlocks = wBlocks,
             IdBlocks = iBlocks,
-            BlockProperties = blockProperties,
+            BlockProperties = Blocks.Instance.blockProperties,
             Vertices = vertices,
             Triangles = triangles,
             Uvs = uvs,
@@ -125,7 +125,7 @@ public class Chunk
         Material[] materials = new Material[segment.Length];
 
         for (int i = 0; i < segment.Length; i++)
-            materials[i] = Materials[segment[i].materialId];
+            materials[i] = Blocks.Instance.materials[segment[i].materialId];
 
         mesh.subMeshCount = segment.Length;
         meshRenderer.materials = materials;
@@ -161,10 +161,10 @@ public class Chunk
         public NativeArray<ulong> WaterBlocks;
 
         [ReadOnly]
-        public NativeArray<byte> IdBlocks;
+        public NativeArray<int> IdBlocks;
 
         [ReadOnly]
-        public UnsafeHashMap<byte, BlockProperties> BlockProperties;
+        public UnsafeHashMap<int, BlockProperties> BlockProperties;
 
         [WriteOnly]
         public NativeList<Vector3> Vertices;
@@ -178,7 +178,7 @@ public class Chunk
         [WriteOnly]
         public NativeList<Segment> Segment;
 
-        public byte GetBlockID(int x, int y, int z)
+        public int GetBlockID(int x, int y, int z)
         {
             return IdBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)];
         }
@@ -206,7 +206,7 @@ public class Chunk
                             int y = math.tzcnt(solidRight);
                             solidRight &= solidRight - 1;
 
-                            byte id = axis2 switch
+                            int id = axis2 switch
                             {
                                 0 or 1 => GetBlockID(x, y, z),
                                 2 or 3 => GetBlockID(y, z, x),
@@ -232,7 +232,7 @@ public class Chunk
                             int y = math.tzcnt(solidLeft);
                             solidLeft &= solidLeft - 1;
 
-                            byte id = axis2 switch
+                            int id = axis2 switch
                             {
                                 0 or 1 => GetBlockID(x, y, z),
                                 2 or 3 => GetBlockID(y, z, x),
@@ -295,7 +295,7 @@ public class Chunk
                 }
             }
 
-            var triangles = new UnsafeHashMap<byte, NativeList<int>>(16, Allocator.Temp);
+            var triangles = new UnsafeHashMap<int, NativeList<int>>(16, Allocator.Temp);
             int verticesLength = 0;
 
             foreach (var item in data)
@@ -303,11 +303,11 @@ public class Chunk
                 BlockData blockData = item.Key;
                 NativeArray<ulong> xz = item.Value;
 
-                byte id = blockData.id;
+                int id = blockData.id;
                 int axis = blockData.axis;
                 int y = blockData.y;
 
-                byte materialId;
+                int materialId;
 
                 if (axis == 0)
                     materialId = BlockProperties[id].bottom;
@@ -450,7 +450,7 @@ public class Chunk
             foreach (var item in triangles)
             {
                 NativeList<int> list = item.Value;
-                byte materialId = item.Key;
+                int materialId = item.Key;
 
                 Triangles.AddRange(list.AsArray());
                 Segment.Add(new Segment(materialId, prev, list.Length));
@@ -462,11 +462,11 @@ public class Chunk
 
     public struct BlockData : IEquatable<BlockData>
     {
-        public readonly byte id;
+        public readonly int id;
         public readonly int axis;
         public readonly int y;
 
-        public BlockData(byte id, int axis, int y)
+        public BlockData(int id, int axis, int y)
         {
             this.id = id;
             this.axis = axis;
@@ -493,11 +493,11 @@ public class Chunk
 
     public struct Segment
     {
-        public readonly byte materialId;
+        public readonly int materialId;
         public readonly int start;
         public readonly int length;
 
-        public Segment(byte materialId, int start, int length)
+        public Segment(int materialId, int start, int length)
         {
             this.materialId = materialId;
             this.start = start;

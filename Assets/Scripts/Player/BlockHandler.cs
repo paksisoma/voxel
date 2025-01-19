@@ -6,10 +6,10 @@ public class BlockHandler : MonoBehaviour
     public Camera playerCamera;
     public float maxDistance = 100f;
 
-    private void Start()
+    /*private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-    }
+    }*/
 
     void Update()
     {

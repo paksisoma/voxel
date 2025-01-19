@@ -15,7 +15,12 @@ public class World : MonoBehaviour
 
     private bool render = false;
 
-    public GameObject tree;
+    [Header("Chunk")]
+    public GameObject chunkParent;
+
+    [Header("Tree")]
+    public GameObject treeObject;
+    public GameObject treeParent;
 
     private void Awake()
     {
@@ -150,11 +155,16 @@ public class World : MonoBehaviour
         render = false;
     }
 
-    void OnApplicationQuit()
+    /*void OnDestroy()
     {
-        foreach (Transform child in GlobalReferences.chunks.transform)
+        // Destroy chunks
+        foreach (Transform child in chunkParent.transform)
             DestroyImmediate(child.gameObject);
-    }
+
+        // Destroy trees
+        foreach (Transform child in treeParent.transform)
+            DestroyImmediate(child.gameObject);
+    }*/
 
     void GenerateChunk(Vector2Int chunkPosition)
     {
@@ -189,7 +199,7 @@ public class World : MonoBehaviour
 
             GameObject gameObject = new GameObject(chunkPosition.x + "/" + i + "/" + chunkPosition.y);
             gameObject.transform.position = relativePosition;
-            gameObject.transform.SetParent(GlobalReferences.chunks.transform);
+            gameObject.transform.SetParent(chunkParent.transform);
             gameObject.isStatic = true;
 
             MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
@@ -243,11 +253,11 @@ public class World : MonoBehaviour
                     // Tree
                     if (treeMap[j] && heightMap[j] < MOUNTAIN_HEIGHT_START)
                     {
-                        GameObject treeObject = Instantiate(tree, relativePosition + new Vector3(x, heightMap[j], z), Quaternion.identity);
-                        treeObject.transform.SetParent(GlobalReferences.trees.transform);
-                        treeObject.isStatic = true;
-                        StaticBatchingUtility.Combine(treeObject);
-                        chunk.prefabs.Add(treeObject);
+                        GameObject tree = Instantiate(treeObject, relativePosition + new Vector3(x, heightMap[j], z), Quaternion.identity);
+                        tree.transform.SetParent(treeParent.transform);
+                        tree.isStatic = true;
+                        StaticBatchingUtility.Combine(tree);
+                        chunk.prefabs.Add(tree);
                     }
 
                     // Water
