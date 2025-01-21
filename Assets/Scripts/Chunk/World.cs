@@ -77,7 +77,7 @@ public class World : MonoBehaviour
         _ = RenderChunks();
     }
 
-    public static void SetBlock(int x, int y, int z, byte id)
+    public static void SetBlock(int x, int y, int z, int id)
     {
         // Chunk position
         Vector3Int chunkPosition = new Vector3Int(x, y, z);
@@ -99,7 +99,7 @@ public class World : MonoBehaviour
         chunk.UpdateMesh();
 
         // Neighbour
-        void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int blockPosition, byte id, int axis)
+        void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int blockPosition, int id, int axis)
         {
             Vector3Int neighbourChunkPosition = chunkPosition;
             Vector3Int neighbourBlockPosition = blockPosition;
@@ -127,6 +127,27 @@ public class World : MonoBehaviour
         UpdateNeighbourBlock(chunkPosition, blockPosition, id, 0); // X
         UpdateNeighbourBlock(chunkPosition, blockPosition, id, 1); // Y
         UpdateNeighbourBlock(chunkPosition, blockPosition, id, 2); // Z
+    }
+
+    public static int GetBlock(int x, int y, int z)
+    {
+        // Chunk position
+        Vector3Int chunkPosition = new Vector3Int(x, y, z);
+
+        if (chunkPosition.x < 0)
+            chunkPosition.x -= CHUNK_SIZE_NO_PADDING - 1;
+
+        if (chunkPosition.z < 0)
+            chunkPosition.z -= CHUNK_SIZE_NO_PADDING - 1;
+
+        chunkPosition /= CHUNK_SIZE_NO_PADDING;
+
+        // Block position
+        Vector3Int blockPosition = (new Vector3Int(x, y, z) - (chunkPosition * CHUNK_SIZE_NO_PADDING)) + new Vector3Int(1, 1, 1);
+
+        // Chunk
+        Chunk chunk = GetChunk(chunkPosition);
+        return chunk.GetBlock(blockPosition.x, blockPosition.y, blockPosition.z);
     }
 
     private static Chunk GetChunk(Vector3Int position)

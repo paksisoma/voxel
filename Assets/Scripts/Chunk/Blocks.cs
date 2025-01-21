@@ -10,6 +10,7 @@ public class Blocks : MonoBehaviour
     public Block[] blocks;
     public UnsafeHashMap<int, BlockProperties> blockProperties = new UnsafeHashMap<int, BlockProperties>(16, Allocator.Persistent);
     public Dictionary<int, Material> materials = new Dictionary<int, Material>();
+    public Dictionary<int, Block> blocksID = new Dictionary<int, Block>();
 
     void Awake()
     {
@@ -30,6 +31,7 @@ public class Blocks : MonoBehaviour
             int bottomHash = block.bottomMaterial.GetHashCode();
 
             blockProperties.Add(block.itemID, new BlockProperties(topHash, sideHash, bottomHash));
+            blocksID.Add(block.itemID, block);
 
             if (!materials.ContainsKey(topHash))
                 materials.Add(topHash, block.topMaterial);
