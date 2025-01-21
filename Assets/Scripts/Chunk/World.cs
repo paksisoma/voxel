@@ -194,11 +194,13 @@ public class World : MonoBehaviour
 
         NativeArray<int> heightMap = new NativeArray<int>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Height map
         NativeArray<float> blueNoise = new NativeArray<float>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Blue noise
+        NativeArray<bool> snowMap = new NativeArray<bool>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Snow map
 
         NoiseJob noiseJob = new NoiseJob
         {
             HeightMap = heightMap,
             BlueNoise = blueNoise,
+            SnowMap = snowMap,
             RelativePosition = new int2(position.x, position.y),
         };
 
@@ -244,27 +246,42 @@ public class World : MonoBehaviour
 
                 if (height > 0)
                 {
-                    for (int y = 0; y < height - 1; y++)
-                        chunk.AddSolid(x, y, z, 2); // Stone
-
-                    if (heightMap[j] < WATER_HEIGHT + 1)
+                    // Snow biome
+                    if (snowMap[j])
                     {
-                        chunk.AddSolid(x, height - 1, z, 4); // Sand
+                        for (int y = 0; y < height - 1; y++)
+                            chunk.AddSolid(x, y, z, 2); // Stone
+
+                        // Under water
+                        if (heightMap[j] < WATER_HEIGHT)
+                            chunk.AddSolid(x, height - 1, z, 6); // Dirt
+                        else
+                            chunk.AddSolid(x, height - 1, z, 5); // Snow
                     }
-                    else
+                    else // Normal biome
                     {
-                        if (heightMap[j] > MOUNTAIN_HEIGHT_START)
-                        {
-                            bool stone = Mathf.Abs(MOUNTAIN_HEIGHT_START - heightMap[j]) >= UnityEngine.Random.Range(0, 20);
+                        for (int y = 0; y < height - 1; y++)
+                            chunk.AddSolid(x, y, z, 2); // Stone
 
-                            if (stone)
-                                chunk.AddSolid(x, height - 1, z, 2); // Stone
-                            else
-                                chunk.AddSolid(x, height - 1, z, 1); // Grass
+                        if (heightMap[j] < WATER_HEIGHT + 1)
+                        {
+                            chunk.AddSolid(x, height - 1, z, 4); // Sand
                         }
                         else
                         {
-                            chunk.AddSolid(x, height - 1, z, 1); // Grass
+                            if (heightMap[j] > MOUNTAIN_HEIGHT_START)
+                            {
+                                bool stone = Mathf.Abs(MOUNTAIN_HEIGHT_START - heightMap[j]) >= UnityEngine.Random.Range(0, 20);
+
+                                if (stone)
+                                    chunk.AddSolid(x, height - 1, z, 2); // Stone
+                                else
+                                    chunk.AddSolid(x, height - 1, z, 1); // Grass
+                            }
+                            else
+                            {
+                                chunk.AddSolid(x, height - 1, z, 1); // Grass
+                            }
                         }
                     }
                 }
@@ -294,12 +311,13 @@ public class World : MonoBehaviour
 
         heightMap.Dispose();
         treeMap.Dispose();
+        snowMap.Dispose();
 
         chunks.Add(chunkPosition, vChunks);
     }
 
-    //[BurstCompile]
-    [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
+    [BurstCompile]
+    //[BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
     private struct NoiseJob : IJobParallelFor
     {
         [WriteOnly]
@@ -307,6 +325,9 @@ public class World : MonoBehaviour
 
         [WriteOnly]
         public NativeArray<float> BlueNoise;
+
+        [WriteOnly]
+        public NativeArray<bool> SnowMap;
 
         [ReadOnly]
         public int2 RelativePosition;
@@ -351,6 +372,10 @@ public class World : MonoBehaviour
                 c = Noise(position10000, 1);
 
             BlueNoise[i] = c;
+
+            // Snow map
+            if (position.y > Noise(position, 10) * 50 + SNOW_BIOME_START)
+                SnowMap[i] = true;
         }
 
         public float Noise(float2 position, float frequency)
