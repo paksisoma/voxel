@@ -289,7 +289,7 @@ public class World : MonoBehaviour
                 if (i == 0)
                 {
                     // Tree
-                    if (treeMap[j] && heightMap[j] < MOUNTAIN_HEIGHT_START)
+                    if (treeMap[j] && heightMap[j] < MOUNTAIN_HEIGHT_START && heightMap[j] > WATER_HEIGHT)
                     {
                         GameObject tree = Instantiate(treeObject, relativePosition + new Vector3(x, heightMap[j], z), Quaternion.identity);
                         tree.transform.SetParent(treeParent.transform);
