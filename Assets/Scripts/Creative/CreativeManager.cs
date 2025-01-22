@@ -8,6 +8,7 @@ public class CreativeManager : MonoBehaviour
 
     public InputField speedInput;
     public InputField jumpHeightInput;
+    public InputField renderDistanceInput;
 
     private float defaultSpeed;
     private float defaultJumpHeight;
@@ -49,6 +50,13 @@ public class CreativeManager : MonoBehaviour
         if (isNumeric)
             movement.jumpHeight = jumpHeight;
 
+        // Render distance
+        int renderDistance;
+        isNumeric = int.TryParse(renderDistanceInput.text, out renderDistance);
+
+        if (isNumeric)
+            World.Instance.renderDistance = renderDistance;
+
         // Clear
         ClearInputs();
     }
@@ -57,6 +65,7 @@ public class CreativeManager : MonoBehaviour
     {
         movement.speed = defaultSpeed;
         movement.jumpHeight = defaultJumpHeight;
+        World.Instance.renderDistance = Constants.RENDER_DISTANCE;
 
         ClearInputs();
     }
@@ -65,5 +74,6 @@ public class CreativeManager : MonoBehaviour
     {
         speedInput.text = "";
         jumpHeightInput.text = "";
+        renderDistanceInput.text = "";
     }
 }

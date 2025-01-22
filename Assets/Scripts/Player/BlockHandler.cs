@@ -1,5 +1,4 @@
 using UnityEngine;
-using static World;
 
 public class BlockHandler : MonoBehaviour
 {
@@ -31,7 +30,7 @@ public class BlockHandler : MonoBehaviour
                 {
                     Vector3 hitPoint = hit.point + (hit.normal * 0.5f);
 
-                    SetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z), activeItem.item.itemID);
+                    World.Instance.SetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z), activeItem.item.itemID);
 
                     activeItem.quantity--;
                     activeItem.UpdateQuantity();
@@ -47,12 +46,12 @@ public class BlockHandler : MonoBehaviour
             {
                 Vector3 hitPoint = hit.point - (hit.normal * 0.5f);
 
-                int blockID = GetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z));
+                int blockID = World.Instance.GetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z));
 
                 if (Blocks.Instance.blocksID.ContainsKey(blockID))
                     InventoryManager.Instance.AddItem(Blocks.Instance.blocksID[blockID]);
 
-                SetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z), 0);
+                World.Instance.SetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z), 0);
             }
         }
     }

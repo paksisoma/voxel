@@ -10,10 +10,25 @@ using static Constants;
 
 public class World : MonoBehaviour
 {
-    public static Dictionary<Vector2Int, Chunk[]> chunks;
+    public static World Instance { get; private set; }
+
+    public Dictionary<Vector2Int, Chunk[]> chunks;
     private List<Vector2Int> chunkQueue;
 
     private bool render = false;
+
+    private int _renderDistance;
+    public int renderDistance
+    {
+        get => _renderDistance;
+        set
+        {
+            _renderDistance = value;
+
+            if (_renderDistance > value)
+                DestroyChunks();
+        }
+    }
 
     [Header("Chunk")]
     public GameObject chunkParent;
@@ -24,8 +39,19 @@ public class World : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
         chunks = new Dictionary<Vector2Int, Chunk[]>();
         chunkQueue = new List<Vector2Int>();
+        renderDistance = RENDER_DISTANCE;
     }
 
     void Update()
@@ -36,9 +62,9 @@ public class World : MonoBehaviour
         Vector3Int playerChunk = Player.Instance.chunkPosition;
 
         // Generate near chunk if not exists
-        for (int x = -RENDER_DISTANCE; x <= RENDER_DISTANCE; x++)
+        for (int x = -renderDistance; x <= renderDistance; x++)
         {
-            for (int z = -RENDER_DISTANCE; z <= RENDER_DISTANCE; z++)
+            for (int z = -renderDistance; z <= renderDistance; z++)
             {
                 Vector2Int chunkPosition = new Vector2Int(playerChunk.x + x, playerChunk.z + z);
 
@@ -52,7 +78,7 @@ public class World : MonoBehaviour
 
         foreach ((Vector2Int chunkPosition, Chunk[] verticalChunks) in chunks)
         {
-            if (chunkPosition.x > playerChunk.x + RENDER_DISTANCE || chunkPosition.x < playerChunk.x - RENDER_DISTANCE || chunkPosition.y > playerChunk.z + RENDER_DISTANCE || chunkPosition.y < playerChunk.z - RENDER_DISTANCE)
+            if (chunkPosition.x > playerChunk.x + renderDistance || chunkPosition.x < playerChunk.x - renderDistance || chunkPosition.y > playerChunk.z + renderDistance || chunkPosition.y < playerChunk.z - renderDistance)
             {
                 // Destroy
                 for (int i = 0; i < verticalChunks.Length; i++)
@@ -77,7 +103,7 @@ public class World : MonoBehaviour
         _ = RenderChunks();
     }
 
-    public static void SetBlock(int x, int y, int z, int id)
+    public void SetBlock(int x, int y, int z, int id)
     {
         // Chunk position
         Vector3Int chunkPosition = new Vector3Int(x, y, z);
@@ -129,7 +155,7 @@ public class World : MonoBehaviour
         UpdateNeighbourBlock(chunkPosition, blockPosition, id, 2); // Z
     }
 
-    public static int GetBlock(int x, int y, int z)
+    public int GetBlock(int x, int y, int z)
     {
         // Chunk position
         Vector3Int chunkPosition = new Vector3Int(x, y, z);
@@ -150,7 +176,7 @@ public class World : MonoBehaviour
         return chunk.GetBlock(blockPosition.x, blockPosition.y, blockPosition.z);
     }
 
-    private static Chunk GetChunk(Vector3Int position)
+    private Chunk GetChunk(Vector3Int position)
     {
         Vector2Int chunkKey = new Vector2Int(position.x, position.z);
 
@@ -176,16 +202,16 @@ public class World : MonoBehaviour
         render = false;
     }
 
-    /*void OnDestroy()
+    void DestroyChunks()
     {
         // Destroy chunks
         foreach (Transform child in chunkParent.transform)
-            DestroyImmediate(child.gameObject);
+            Destroy(child.gameObject);
 
         // Destroy trees
         foreach (Transform child in treeParent.transform)
-            DestroyImmediate(child.gameObject);
-    }*/
+            Destroy(child.gameObject);
+    }
 
     void GenerateChunk(Vector2Int chunkPosition)
     {
@@ -316,8 +342,8 @@ public class World : MonoBehaviour
         chunks.Add(chunkPosition, vChunks);
     }
 
-    [BurstCompile]
-    //[BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
+    //[BurstCompile]
+    [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
     private struct NoiseJob : IJobParallelFor
     {
         [WriteOnly]
