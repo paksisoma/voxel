@@ -5,9 +5,13 @@ public class BlockHandler : MonoBehaviour
     public Camera playerCamera;
     public float maxDistance = 100f;
 
+    public Item tempItem;
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
+
+        InventoryManager.Instance.AddItem(tempItem);
     }
 
     void Update()

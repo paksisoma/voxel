@@ -8,6 +8,8 @@ public class Player : MonoBehaviour
     public CharacterController controller { get; private set; }
     public Vector3Int chunkPosition { get; private set; }
 
+    public GameObject rightHandParent;
+
     void Awake()
     {
         if (Instance == null)

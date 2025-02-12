@@ -1461,6 +1461,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1644947903}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &542339699 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -8024697000192651778, guid: 48c35668324f9774886ff933a391e211, type: 3}
+  m_PrefabInstance: {fileID: 1233586747}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &571155443 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3568525767724017143, guid: 54472e13b32929a49b4647cb9dce9d87, type: 3}
@@ -1494,6 +1499,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8de0261a9e311644adeb69a9d4618ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rightHandParent: {fileID: 542339699}
 --- !u!114 &576098805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1576,6 +1582,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 1560936181}
   maxDistance: 100
+  tempItem: {fileID: 11400000, guid: 26d890e50acb14744a448a233f56f4d4, type: 2}
 --- !u!1001 &602086611
 PrefabInstance:
   m_ObjectHideFlags: 0

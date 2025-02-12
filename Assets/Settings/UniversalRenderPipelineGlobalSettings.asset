@@ -54,19 +54,9 @@ MonoBehaviour:
       - rid: 6852985685364965394
       - rid: 8712630790384254976
       - rid: 4796176410940276736
+      - rid: 5398247001835175936
     m_RuntimeSettings:
-      m_List:
-      - rid: 6852985685364965378
-      - rid: 6852985685364965379
-      - rid: 6852985685364965380
-      - rid: 6852985685364965381
-      - rid: 6852985685364965384
-      - rid: 6852985685364965385
-      - rid: 4796176451668803670
-      - rid: 6852985685364965392
-      - rid: 6852985685364965394
-      - rid: 8712630790384254976
-      - rid: 4796176410940276736
+      m_List: []
   m_AssetVersion: 8
   m_ObsoleteDefaultVolumeProfile: {fileID: 0}
   m_RenderingLayerNames:
@@ -116,6 +106,10 @@ MonoBehaviour:
         m_OcclusionCullingDebugKernels: {fileID: 7200000, guid: b23e766bcf50ca4438ef186b174557df, type: 3}
         m_DebugOcclusionTestPS: {fileID: 4800000, guid: d3f0849180c2d0944bc71060693df100, type: 3}
         m_DebugOccluderPS: {fileID: 4800000, guid: b3c92426a88625841ab15ca6a7917248, type: 3}
+    - rid: 5398247001835175936
+      type: {class: UniversalRenderPipelineEditorAssets, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
+      data:
+        m_DefaultSettingsVolumeProfile: {fileID: 11400000, guid: eda47df5b85f4f249abf7abd73db2cb2, type: 2}
     - rid: 6438066579524812862
       type: {class: URPShaderStrippingSetting, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
@@ -158,6 +152,7 @@ MonoBehaviour:
         m_DefaultLineMaterial: {fileID: 2100000, guid: e823cd5b5d27c0f4b8256e7c12ee3e6d, type: 2}
         m_DefaultTerrainMaterial: {fileID: 2100000, guid: 594ea882c5a793440b60ff72d896021e, type: 2}
         m_DefaultDecalMaterial: {fileID: 2100000, guid: 31d0dcc6f2dd4e4408d18036a2c93862, type: 2}
+        m_DefaultSpriteMaterial: {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
     - rid: 6438066579524812866
       type: {class: STP/RuntimeResources, ns: UnityEngine.Rendering, asm: Unity.RenderPipelines.Core.Runtime}
       data:

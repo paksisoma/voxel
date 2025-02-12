@@ -91,6 +91,26 @@ public class InventoryManager : MonoBehaviour
 
     private void OnActiveItemChanged()
     {
-        // TODO
+        Transform rightHand = Player.Instance.rightHandParent.transform;
+
+        if (activeItem == null)
+        {
+            // Remove all children
+            foreach (Transform child in rightHand)
+                Destroy(child.gameObject);
+        }
+        else
+        {
+            Item item = activeItem.item;
+
+            if (item is Tool tool)
+            {
+                GameObject a = Instantiate(tool.model);
+
+                a.transform.SetParent(rightHand);
+                a.transform.localPosition = Vector3.zero;
+                a.transform.localRotation = Quaternion.identity;
+            }
+        }
     }
 }

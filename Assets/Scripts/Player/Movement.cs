@@ -69,5 +69,14 @@ public class Movement : MonoBehaviour
 
         Vector3 velocity = (moveDirection.normalized * speed + Vector3.up * verticalVelocity) * Time.deltaTime;
         controller.Move(velocity);
+
+
+
+
+
+        if (Input.GetMouseButtonDown(0)) // Left button
+        {
+            animator.SetTrigger("chop");
+        }
     }
 }
