@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!319 &31900000
+AvatarMask:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Lower Body
+  m_Mask: 00000000000000000000000001000000010000000000000000000000000000000000000000000000000000000000000000000000
+  m_Elements:
+  - m_Path: 
+    m_Weight: 1
+  - m_Path: Armature
+    m_Weight: 0
+  - m_Path: Armature/Left Foot
+    m_Weight: 1
+  - m_Path: Armature/Left Foot/Left Foot_end
+    m_Weight: 0
+  - m_Path: Armature/Left Hand
+    m_Weight: 0
+  - m_Path: Armature/Left Hand/Left Hand_end
+    m_Weight: 0
+  - m_Path: Armature/Right Foot
+    m_Weight: 1
+  - m_Path: Armature/Right Foot/Right Foot_end
+    m_Weight: 0
+  - m_Path: Armature/Right Hand
+    m_Weight: 0
+  - m_Path: Armature/Right Hand/Right Hand_end
+    m_Weight: 0
+  - m_Path: Armature/Torso
+    m_Weight: 0
+  - m_Path: Armature/Torso/Head
+    m_Weight: 0
+  - m_Path: Armature/Torso/Head/Head_end
+    m_Weight: 0
+  - m_Path: Character
+    m_Weight: 0
