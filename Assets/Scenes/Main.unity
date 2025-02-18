@@ -1500,6 +1500,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rightHandParent: {fileID: 542339699}
+  cinemachineInput: {fileID: 945649252}
+  movement: {fileID: 576098805}
 --- !u!114 &576098805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1516,6 +1518,7 @@ MonoBehaviour:
   speed: 8
   gravity: -9.81
   jumpHeight: 1.5
+  activity: 1
 --- !u!95 &576098806
 Animator:
   serializedVersion: 7

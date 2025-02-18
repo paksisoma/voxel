@@ -17,6 +17,9 @@ public class Movement : MonoBehaviour
     private float turnSmoothTime = 0.1f;
     private float turnSmoothVelocity;
 
+    [HideInInspector]
+    public bool activity = true;
+
     void Awake()
     {
         controller = Player.Instance.controller;
@@ -25,8 +28,20 @@ public class Movement : MonoBehaviour
 
     void Update()
     {
-        float horizontal = Input.GetAxisRaw("Horizontal");
-        float vertical = Input.GetAxisRaw("Vertical");
+        float horizontal;
+        float vertical;
+
+        if (activity)
+        {
+            horizontal = Input.GetAxisRaw("Horizontal");
+            vertical = Input.GetAxisRaw("Vertical");
+        }
+        else
+        {
+            horizontal = 0f;
+            vertical = 0f;
+        }
+
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         Vector3 moveDirection = Vector3.zero;
@@ -70,11 +85,8 @@ public class Movement : MonoBehaviour
         Vector3 velocity = (moveDirection.normalized * speed + Vector3.up * verticalVelocity) * Time.deltaTime;
         controller.Move(velocity);
 
-
-
-
-
-        if (Input.GetMouseButtonDown(0)) // Left button
+        // Left button
+        if (Input.GetMouseButtonDown(0))
         {
             animator.SetTrigger("chop");
         }

@@ -39,9 +39,17 @@ public class InventoryManager : MonoBehaviour
             inventory.SetActive(!inventory.activeSelf);
 
             if (inventory.activeSelf)
+            {
                 Cursor.lockState = CursorLockMode.None;
+                Player.Instance.DisableCameraMouse();
+                Player.Instance.DisableActivity();
+            }
             else
+            {
                 Cursor.lockState = CursorLockMode.Locked;
+                Player.Instance.EnableCameraMouse();
+                Player.Instance.EnableActivity();
+            }
         }
     }
 

@@ -1,3 +1,4 @@
+using Unity.Cinemachine;
 using UnityEngine;
 using static Constants;
 
@@ -9,6 +10,10 @@ public class Player : MonoBehaviour
     public Vector3Int chunkPosition { get; private set; }
 
     public GameObject rightHandParent;
+
+    public CinemachineInputAxisController cinemachineInput;
+
+    public Movement movement;
 
     void Awake()
     {
@@ -37,5 +42,25 @@ public class Player : MonoBehaviour
         int playerChunkZ = Mathf.FloorToInt(transform.position.z / CHUNK_SIZE_NO_PADDING);
 
         chunkPosition = new Vector3Int(playerChunkX, playerChunkY, playerChunkZ);
+    }
+
+    public void DisableCameraMouse()
+    {
+        cinemachineInput.enabled = false;
+    }
+
+    public void EnableCameraMouse()
+    {
+        cinemachineInput.enabled = true;
+    }
+
+    public void DisableActivity()
+    {
+        movement.activity = false;
+    }
+
+    public void EnableActivity()
+    {
+        movement.activity = true;
     }
 }
