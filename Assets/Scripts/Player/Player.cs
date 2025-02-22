@@ -15,6 +15,8 @@ public class Player : MonoBehaviour
 
     public Movement movement;
 
+    public Animator animator;
+
     void Awake()
     {
         if (Instance == null)

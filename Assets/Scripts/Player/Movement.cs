@@ -3,9 +3,6 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterController), typeof(Animator))]
 public class Movement : MonoBehaviour
 {
-    private CharacterController controller;
-    private Animator animator;
-
     public Transform _camera;
 
     public float speed = 6f;
@@ -19,12 +16,6 @@ public class Movement : MonoBehaviour
 
     [HideInInspector]
     public bool activity = true;
-
-    void Awake()
-    {
-        controller = Player.Instance.controller;
-        animator = GetComponent<Animator>();
-    }
 
     void Update()
     {
@@ -47,18 +38,18 @@ public class Movement : MonoBehaviour
         Vector3 moveDirection = Vector3.zero;
 
         // Jump, fall
-        if (controller.isGrounded)
+        if (Player.Instance.controller.isGrounded)
         {
             verticalVelocity = -2f;
 
             if (Input.GetButtonDown("Jump"))
             {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                animator.SetBool("isJumping", true);
+                Player.Instance.animator.SetBool("isJumping", true);
             }
             else
             {
-                animator.SetBool("isJumping", false);
+                Player.Instance.animator.SetBool("isJumping", false);
             }
         }
         else
@@ -75,20 +66,14 @@ public class Movement : MonoBehaviour
 
             moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
 
-            animator.SetBool("isRunning", true);
+            Player.Instance.animator.SetBool("isRunning", true);
         }
         else
         {
-            animator.SetBool("isRunning", false);
+            Player.Instance.animator.SetBool("isRunning", false);
         }
 
         Vector3 velocity = (moveDirection.normalized * speed + Vector3.up * verticalVelocity) * Time.deltaTime;
-        controller.Move(velocity);
-
-        // Left button
-        if (Input.GetMouseButtonDown(0))
-        {
-            animator.SetTrigger("chop");
-        }
+        Player.Instance.controller.Move(velocity);
     }
 }

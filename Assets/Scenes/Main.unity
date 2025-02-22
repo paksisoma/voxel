@@ -1502,6 +1502,7 @@ MonoBehaviour:
   rightHandParent: {fileID: 542339699}
   cinemachineInput: {fileID: 945649252}
   movement: {fileID: 576098805}
+  animator: {fileID: 576098806}
 --- !u!114 &576098805
 MonoBehaviour:
   m_ObjectHideFlags: 0
