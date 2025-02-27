@@ -87,7 +87,12 @@ public class Chunk
 
     public int GetBlock(int x, int y, int z)
     {
-        return idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)];
+        return idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + y * CHUNK_SIZE + x];
+    }
+
+    public int GetBlock(Vector3Int position)
+    {
+        return idBlocks[(CHUNK_SIZE * CHUNK_SIZE * position.z) + position.y * CHUNK_SIZE + position.x];
     }
 
     public void UpdateMesh()
