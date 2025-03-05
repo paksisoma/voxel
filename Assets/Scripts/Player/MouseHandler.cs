@@ -30,14 +30,14 @@ public class MouseHandler : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit, maxDistance))
             {
-                Vector3 hitPoint = hit.point - (hit.normal * 0.5f);
+                Vector3Int hitPoint = Vector3Int.RoundToInt(hit.point - hit.normal * 0.5f);
 
-                int blockID = World.Instance.GetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z));
+                int blockID = World.Instance.GetBlock(hitPoint);
 
                 if (Blocks.Instance.blocksID.ContainsKey(blockID))
                     InventoryManager.Instance.AddItem(Blocks.Instance.blocksID[blockID]);
 
-                World.Instance.SetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z), 0);
+                World.Instance.SetBlock(hitPoint, 0);
             }
         }
         else
@@ -53,9 +53,9 @@ public class MouseHandler : MonoBehaviour
 
                 if (Physics.Raycast(ray, out hit, maxDistance))
                 {
-                    Vector3 hitPoint = hit.point + (hit.normal * 0.5f);
+                    Vector3Int hitPoint = Vector3Int.RoundToInt(hit.point + hit.normal * 0.5f);
 
-                    World.Instance.SetBlock(Mathf.RoundToInt(hitPoint.x), Mathf.RoundToInt(hitPoint.y), Mathf.RoundToInt(hitPoint.z), activeItem.item.itemID);
+                    World.Instance.SetBlock(hitPoint, activeItem.item.itemID);
 
                     activeItem.quantity--;
                     activeItem.UpdateQuantity();

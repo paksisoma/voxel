@@ -7,6 +7,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using static Constants;
+using static Utils;
 
 public class World : MonoBehaviour
 {
@@ -54,7 +55,7 @@ public class World : MonoBehaviour
         renderDistance = RENDER_DISTANCE;
     }
 
-    void Update()
+    private void Update()
     {
         if (render)
             return;
@@ -103,127 +104,6 @@ public class World : MonoBehaviour
         _ = RenderChunks();
     }
 
-    public void SetBlock(int x, int y, int z, int id)
-    {
-        // Chunk position
-        Vector3Int chunkPosition = new Vector3Int(x, y, z);
-
-        if (chunkPosition.x < 0)
-            chunkPosition.x -= CHUNK_SIZE_NO_PADDING - 1;
-
-        if (chunkPosition.z < 0)
-            chunkPosition.z -= CHUNK_SIZE_NO_PADDING - 1;
-
-        chunkPosition /= CHUNK_SIZE_NO_PADDING;
-
-        // Block position
-        Vector3Int blockPosition = (new Vector3Int(x, y, z) - (chunkPosition * CHUNK_SIZE_NO_PADDING)) + new Vector3Int(1, 1, 1);
-
-        // Chunk
-        Chunk chunk = GetChunk(chunkPosition);
-        chunk.SetBlock(blockPosition.x, blockPosition.y, blockPosition.z, id);
-        chunk.UpdateMesh();
-
-        // Neighbour
-        void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int blockPosition, int id, int axis)
-        {
-            Vector3Int neighbourChunkPosition = chunkPosition;
-            Vector3Int neighbourBlockPosition = blockPosition;
-
-            if (blockPosition[axis] == 1) // Left
-            {
-                neighbourChunkPosition[axis]--;
-                neighbourBlockPosition[axis] = CHUNK_SIZE_NO_PADDING + 1;
-            }
-            else if (blockPosition[axis] == 62) // Right
-            {
-                neighbourChunkPosition[axis]++;
-                neighbourBlockPosition[axis] = 0;
-            }
-            else
-            {
-                return;
-            }
-
-            Chunk neighbourChunk = GetChunk(neighbourChunkPosition);
-            neighbourChunk.SetBlock(neighbourBlockPosition.x, neighbourBlockPosition.y, neighbourBlockPosition.z, id);
-            neighbourChunk.UpdateMesh();
-        }
-
-        UpdateNeighbourBlock(chunkPosition, blockPosition, id, 0); // X
-        UpdateNeighbourBlock(chunkPosition, blockPosition, id, 1); // Y
-        UpdateNeighbourBlock(chunkPosition, blockPosition, id, 2); // Z
-    }
-
-    public int GetBlock(int x, int y, int z)
-    {
-        // Chunk position
-        Vector3Int chunkPosition = new Vector3Int(x, y, z);
-
-        if (chunkPosition.x < 0)
-            chunkPosition.x -= CHUNK_SIZE_NO_PADDING - 1;
-
-        if (chunkPosition.z < 0)
-            chunkPosition.z -= CHUNK_SIZE_NO_PADDING - 1;
-
-        chunkPosition /= CHUNK_SIZE_NO_PADDING;
-
-        // Block position
-        Vector3Int blockPosition = new Vector3Int(x, y, z) - (chunkPosition * CHUNK_SIZE_NO_PADDING) + new Vector3Int(1, 1, 1);
-
-        // Chunk
-        Chunk chunk = GetChunk(chunkPosition);
-        return chunk.GetBlock(blockPosition.x, blockPosition.y, blockPosition.z);
-    }
-
-    public int GetBlock(Vector3Int position)
-    {
-        // Chunk position
-        Vector3Int chunkPosition = position;
-
-        if (chunkPosition.x < 0)
-            chunkPosition.x -= CHUNK_SIZE_NO_PADDING - 1;
-
-        if (chunkPosition.z < 0)
-            chunkPosition.z -= CHUNK_SIZE_NO_PADDING - 1;
-
-        chunkPosition /= CHUNK_SIZE_NO_PADDING;
-
-        // Block position
-        Vector3Int blockPosition = position - (chunkPosition * CHUNK_SIZE_NO_PADDING) + new Vector3Int(1, 1, 1);
-
-        // Chunk
-        Chunk chunk = GetChunk(chunkPosition);
-
-        if (chunk == null)
-            throw new System.InvalidOperationException("Out of chunk.");
-
-        return chunk.GetBlock(blockPosition.x, blockPosition.y, blockPosition.z);
-    }
-
-    public bool IsGround(Vector3Int position)
-    {
-        Vector3Int down = position + Vector3Int.down;
-
-        return GetBlock(position) == 0 && GetBlock(down) != 0;
-    }
-
-    private Chunk GetChunk(Vector3Int chunkPosition)
-    {
-        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out Chunk[] chunk))
-            return chunk[chunkPosition.y];
-        else
-            return null;
-    }
-
-    public bool IsValidChunk(Vector3Int chunkPosition)
-    {
-        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out Chunk[] chunk))
-            return chunk[chunkPosition.y] != null;
-        else
-            return false;
-    }
-
     async UniTask RenderChunks()
     {
         render = true;
@@ -240,168 +120,7 @@ public class World : MonoBehaviour
         render = false;
     }
 
-    public IEnumerable<Vector3Int> GetNeighbourBlocks(Vector3Int position)
-    {
-        // Cardinal
-        Vector3Int[] cardinal = {
-            new Vector3Int(0, 0, 1),
-            new Vector3Int(0, 0, -1),
-            new Vector3Int(-1, 0, 0),
-            new Vector3Int(1, 0, 0)
-        };
-        bool[] hasCardinal = new bool[cardinal.Length];
-
-        for (int y = -1; y <= 1; y++)
-        {
-            for (int i = 0; i < cardinal.Length; i++)
-            {
-                if (hasCardinal[i] == false)
-                {
-                    Vector3Int neighbour = position + new Vector3Int(cardinal[i].x, y, cardinal[i].z);
-                    if (IsGround(neighbour))
-                    {
-                        hasCardinal[i] = true;
-                        yield return neighbour;
-                    }
-                }
-            }
-        }
-
-        // Diagonal
-        var diagonals = new (int first, int second, Vector3Int offset)[]
-        {
-            (0, 2, new Vector3Int(-1, 0, 1)),
-            (0, 3, new Vector3Int(1, 0, 1)),
-            (1, 2, new Vector3Int(-1, 0, -1)),
-            (1, 3, new Vector3Int(1, 0, -1))
-        };
-
-        for (int y = -1; y <= 1; y++)
-        {
-            foreach (var (first, second, offset) in diagonals)
-            {
-                if (hasCardinal[first] && hasCardinal[second])
-                {
-                    Vector3Int diagNeighbour = position + new Vector3Int(offset.x, y, offset.z);
-                    if (IsGround(diagNeighbour))
-                        yield return diagNeighbour;
-                }
-            }
-        }
-    }
-
-    public List<Vector3Int> Pathfinding(Vector3Int startPosition, Vector3Int endPosition)
-    {
-        if (!IsGround(startPosition) || !IsValidChunk(PositionToChunkPosition(startPosition)))
-            throw new System.InvalidOperationException("Invalid start position.");
-
-        if (!IsGround(endPosition) || !IsValidChunk(PositionToChunkPosition(startPosition)))
-            throw new System.InvalidOperationException("Invalid goal position.");
-
-        List<Vector3Int> path = new List<Vector3Int>();
-
-        Node startNode = new Node
-        {
-            Position = startPosition,
-            Parent = null,
-            G = 0,
-            H = ManhattanDistance(startPosition, endPosition)
-        };
-
-        startNode.F = startNode.G + startNode.H;
-
-        List<Node> openList = new List<Node> { startNode };
-        HashSet<Vector3Int> closedSet = new HashSet<Vector3Int>();
-        Dictionary<Vector3, Node> nodeDict = new Dictionary<Vector3, Node>() {
-            { startNode.Position, startNode }
-        };
-
-        while (openList.Count > 0)
-        {
-            // Shortest F node
-            Node current = openList.OrderBy(n => n.F).First();
-
-            // Found end position
-            if (current.Position == endPosition)
-            {
-                Node node = current;
-
-                while (node.Parent != null)
-                {
-                    path.Add(node.Position);
-                    node = node.Parent;
-                }
-
-                break;
-            }
-
-            // Swap current node from open to closed
-            openList.Remove(current);
-            closedSet.Add(current.Position);
-
-            int g = current.G + 1;
-
-            // Check neighbours
-            foreach (Vector3Int position in GetNeighbourBlocks(current.Position))
-            {
-                // If already exist
-                if (closedSet.Contains(position))
-                    continue;
-
-                if (nodeDict.TryGetValue(position, out Node node))
-                {
-                    if (node.G > g)
-                    {
-                        node.Parent = current;
-                        node.G = g;
-                        node.H = ManhattanDistance(position, endPosition);
-                        node.F = node.G + node.H;
-                    }
-                }
-                else
-                {
-                    node = new Node
-                    {
-                        Position = position,
-                        Parent = current,
-                        G = g,
-                        H = ManhattanDistance(position, endPosition)
-                    };
-
-                    node.F = node.G + node.H;
-
-                    openList.Add(node);
-                    nodeDict.TryAdd(position, node);
-                }
-            }
-        }
-
-        path.Reverse();
-
-        return path;
-    }
-
-    private int ManhattanDistance(Vector3Int a, Vector3Int b)
-    {
-        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) + Mathf.Abs(a.z - b.z);
-    }
-
-    public Vector3Int PositionToChunkPosition(Vector3Int position)
-    {
-        Vector3Int chunkPosition = position;
-
-        if (chunkPosition.x < 0)
-            chunkPosition.x -= CHUNK_SIZE_NO_PADDING - 1;
-
-        if (chunkPosition.z < 0)
-            chunkPosition.z -= CHUNK_SIZE_NO_PADDING - 1;
-
-        chunkPosition /= CHUNK_SIZE_NO_PADDING;
-
-        return chunkPosition;
-    }
-
-    void DestroyChunks()
+    private void DestroyChunks()
     {
         // Destroy chunks
         foreach (Transform child in chunkParent.transform)
@@ -412,7 +131,7 @@ public class World : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    void GenerateChunk(Vector2Int chunkPosition)
+    private void GenerateChunk(Vector2Int chunkPosition)
     {
         Vector2Int position = new Vector2Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
         UnityEngine.Random.InitState(chunkPosition.x.GetHashCode() * chunkPosition.y.GetHashCode());
@@ -541,7 +260,219 @@ public class World : MonoBehaviour
         chunks.Add(chunkPosition, vChunks);
     }
 
-    //[BurstCompile]
+    public void SetBlock(Vector3Int worldPosition, int id)
+    {
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(worldPosition);
+
+        Chunk chunk = GetChunk(chunkPosition);
+        chunk.SetBlock(relativePosition, id);
+        chunk.UpdateMesh();
+
+        void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int relativePosition, int id, int axis)
+        {
+            Vector3Int neighbourChunkPosition = chunkPosition;
+            Vector3Int neighbourRelativePosition = relativePosition;
+
+            if (relativePosition[axis] == 1) // Left
+            {
+                neighbourChunkPosition[axis]--;
+                neighbourRelativePosition[axis] = CHUNK_SIZE_NO_PADDING + 1;
+            }
+            else if (relativePosition[axis] == 62) // Right
+            {
+                neighbourChunkPosition[axis]++;
+                neighbourRelativePosition[axis] = 0;
+            }
+            else
+            {
+                return;
+            }
+
+            Chunk neighbourChunk = GetChunk(neighbourChunkPosition);
+            neighbourChunk.SetBlock(neighbourRelativePosition, id);
+            neighbourChunk.UpdateMesh();
+        }
+
+        UpdateNeighbourBlock(chunkPosition, relativePosition, id, 0); // X
+        UpdateNeighbourBlock(chunkPosition, relativePosition, id, 1); // Y
+        UpdateNeighbourBlock(chunkPosition, relativePosition, id, 2); // Z
+    }
+
+    public int GetBlock(Vector3Int worldPosition)
+    {
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(worldPosition);
+
+        Chunk chunk = GetChunk(chunkPosition);
+
+        return chunk.GetBlock(relativePosition);
+    }
+
+    public Chunk GetChunk(Vector3Int chunkPosition)
+    {
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out Chunk[] chunk))
+            return chunk[chunkPosition.y];
+        else
+            return null;
+    }
+
+    public bool IsValidChunk(Vector3Int chunkPosition)
+    {
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out Chunk[] chunk))
+            return chunk[chunkPosition.y] != null;
+        else
+            return false;
+    }
+
+    public bool IsGround(Vector3Int position)
+    {
+        Vector3Int down = position + Vector3Int.down;
+
+        return GetBlock(position) == 0 && GetBlock(down) != 0;
+    }
+
+    public IEnumerable<Vector3Int> GetNeighbourBlocks(Vector3Int position)
+    {
+        // Cardinal
+        Vector3Int[] cardinal = {
+            new Vector3Int(0, 0, 1),
+            new Vector3Int(0, 0, -1),
+            new Vector3Int(-1, 0, 0),
+            new Vector3Int(1, 0, 0)
+        };
+        bool[] hasCardinal = new bool[cardinal.Length];
+
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int i = 0; i < cardinal.Length; i++)
+            {
+                if (hasCardinal[i] == false)
+                {
+                    Vector3Int neighbour = position + new Vector3Int(cardinal[i].x, y, cardinal[i].z);
+                    if (IsGround(neighbour))
+                    {
+                        hasCardinal[i] = true;
+                        yield return neighbour;
+                    }
+                }
+            }
+        }
+
+        // Diagonal
+        var diagonals = new (int first, int second, Vector3Int offset)[]
+        {
+            (0, 2, new Vector3Int(-1, 0, 1)),
+            (0, 3, new Vector3Int(1, 0, 1)),
+            (1, 2, new Vector3Int(-1, 0, -1)),
+            (1, 3, new Vector3Int(1, 0, -1))
+        };
+
+        for (int y = -1; y <= 1; y++)
+        {
+            foreach (var (first, second, offset) in diagonals)
+            {
+                if (hasCardinal[first] && hasCardinal[second])
+                {
+                    Vector3Int diagNeighbour = position + new Vector3Int(offset.x, y, offset.z);
+                    if (IsGround(diagNeighbour))
+                        yield return diagNeighbour;
+                }
+            }
+        }
+    }
+
+    public List<Vector3Int> Pathfinding(Vector3Int startPosition, Vector3Int endPosition)
+    {
+        if (!IsGround(startPosition) || !IsValidChunk(WorldPositionToChunkPosition(startPosition)))
+            throw new System.InvalidOperationException("Invalid start position.");
+
+        if (!IsGround(endPosition) || !IsValidChunk(WorldPositionToChunkPosition(startPosition)))
+            throw new System.InvalidOperationException("Invalid goal position.");
+
+        List<Vector3Int> path = new List<Vector3Int>();
+
+        Node startNode = new Node
+        {
+            Position = startPosition,
+            Parent = null,
+            G = 0,
+            H = ManhattanDistance(startPosition, endPosition)
+        };
+
+        startNode.F = startNode.G + startNode.H;
+
+        List<Node> openList = new List<Node> { startNode };
+        HashSet<Vector3Int> closedSet = new HashSet<Vector3Int>();
+        Dictionary<Vector3, Node> nodeDict = new Dictionary<Vector3, Node>() {
+            { startNode.Position, startNode }
+        };
+
+        while (openList.Count > 0)
+        {
+            // Shortest F node
+            Node current = openList.OrderBy(n => n.F).First();
+
+            // Found end position
+            if (current.Position == endPosition)
+            {
+                Node node = current;
+
+                while (node.Parent != null)
+                {
+                    path.Add(node.Position);
+                    node = node.Parent;
+                }
+
+                break;
+            }
+
+            // Swap current node from open to closed
+            openList.Remove(current);
+            closedSet.Add(current.Position);
+
+            int g = current.G + 1;
+
+            // Check neighbours
+            foreach (Vector3Int position in GetNeighbourBlocks(current.Position))
+            {
+                // If already exist
+                if (closedSet.Contains(position))
+                    continue;
+
+                if (nodeDict.TryGetValue(position, out Node node))
+                {
+                    if (node.G > g)
+                    {
+                        node.Parent = current;
+                        node.G = g;
+                        node.H = ManhattanDistance(position, endPosition);
+                        node.F = node.G + node.H;
+                    }
+                }
+                else
+                {
+                    node = new Node
+                    {
+                        Position = position,
+                        Parent = current,
+                        G = g,
+                        H = ManhattanDistance(position, endPosition)
+                    };
+
+                    node.F = node.G + node.H;
+
+                    openList.Add(node);
+                    nodeDict.TryAdd(position, node);
+                }
+            }
+        }
+
+        path.Reverse();
+
+        return path;
+    }
+
     [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
     private struct NoiseJob : IJobParallelFor
     {
@@ -610,7 +541,6 @@ public class World : MonoBehaviour
         }
     }
 
-    //[BurstCompile]
     [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
     private struct TreeJob : IJobParallelFor
     {

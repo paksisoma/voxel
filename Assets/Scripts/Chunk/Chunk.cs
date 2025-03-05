@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -40,12 +41,24 @@ public class Chunk
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] |= 1ul << z;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddSolid(Vector3Int position, int id)
+    {
+        AddSolid(position.x, position.y, position.z, id);
+    }
+
     public void RemoveSolid(int x, int y, int z)
     {
         idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = 0;
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] ^= 1ul << y;
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] ^= 1ul << x;
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] ^= 1ul << z;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RemoveSolid(Vector3Int position)
+    {
+        RemoveSolid(position.x, position.y, position.z);
     }
 
     public void AddWater(int x, int y, int z)
@@ -56,12 +69,24 @@ public class Chunk
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] |= 1ul << z;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddWater(Vector3Int position)
+    {
+        AddWater(position.x, position.y, position.z);
+    }
+
     public void RemoveWater(int x, int y, int z)
     {
         idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = 0;
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] ^= 1ul << y;
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 1) + (y * CHUNK_SIZE + z)] ^= 1ul << x;
         waterBlocks[(CHUNK_SIZE * CHUNK_SIZE * 2) + (y * CHUNK_SIZE + x)] ^= 1ul << z;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RemoveWater(Vector3Int position)
+    {
+        RemoveWater(position.x, position.y, position.z);
     }
 
     public void SetBlock(int x, int y, int z, int id)
@@ -85,14 +110,34 @@ public class Chunk
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetBlock(Vector3Int position, int id)
+    {
+        SetBlock(position.x, position.y, position.z, id);
+    }
+
     public int GetBlock(int x, int y, int z)
     {
         return idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + y * CHUNK_SIZE + x];
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetBlock(Vector3Int position)
     {
-        return idBlocks[(CHUNK_SIZE * CHUNK_SIZE * position.z) + position.y * CHUNK_SIZE + position.x];
+        return GetBlock(position.x, position.y, position.z);
+    }
+
+    public int GetGroundPosition(int x, int y, int z)
+    {
+        ulong bits = solidBlocks[z * CHUNK_SIZE + x];
+        ulong mask = ulong.MaxValue >> (64 - y);
+        return 64 - math.lzcnt(bits & mask);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetGroundPosition(Vector3Int position)
+    {
+        return GetGroundPosition(position.x, position.y, position.z);
     }
 
     public void UpdateMesh()
@@ -115,7 +160,7 @@ public class Chunk
             Vertices = vertices,
             Triangles = triangles,
             Uvs = uvs,
-            Segment = segment,  
+            Segment = segment,
         };
 
         job.Schedule().Complete();
@@ -323,7 +368,7 @@ public class Chunk
 
                 if (y <= 0 || y > CHUNK_SIZE - 2)
                     continue;
-                
+
                 for (int i = 1; i < xz.Length - 1; i++)
                 {
                     xz[i] = (xz[i] & ~1ul) & ~(1ul << CHUNK_SIZE - 1); // Remove padding
