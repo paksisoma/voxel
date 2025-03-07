@@ -301,8 +301,7 @@ public class Chunk
                         }
 
                         // Water right
-                        ulong waterRight = waterBits & ~(waterBits << 1);
-                        waterRight ^= solidLeft << 1;
+                        ulong waterRight = (waterBits & ~(waterBits << 1)) & ~((solidBits & ~(solidBits >> 1)) << 1);
 
                         while (waterRight != 0)
                         {
@@ -321,10 +320,7 @@ public class Chunk
                         }
 
                         // Water left
-                        ulong waterLeft = waterBits & ~(waterBits >> 1);
-
-                        if (axis != 0)
-                            waterLeft ^= solidRight >> 1;
+                        ulong waterLeft = (waterBits & ~(waterBits >> 1)) & ~((solidBits & ~(solidBits << 1)) >> 1);
 
                         while (waterLeft != 0)
                         {
