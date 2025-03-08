@@ -3,6 +3,7 @@ public static class Constants
     public const byte CHUNK_SIZE = 64;
     public const byte RENDER_DISTANCE = 3;
     public const byte WATER_HEIGHT = 50;
+    public const int CLOUD_HEIGHT = CHUNK_SIZE * 4;
     public const byte HIGHEST_BLOCK = 250;
     public const byte MOUNTAIN_HEIGHT_START = 115;
     public const int SNOW_BIOME_START = 500;

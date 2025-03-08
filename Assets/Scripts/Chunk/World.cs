@@ -13,7 +13,7 @@ public class World : MonoBehaviour
 {
     public static World Instance { get; private set; }
 
-    public Dictionary<Vector2Int, Chunk[]> chunks;
+    private Dictionary<Vector2Int, ChunkData> chunks;
     private List<Vector2Int> chunkQueue;
 
     private bool render = false;
@@ -38,6 +38,10 @@ public class World : MonoBehaviour
     public GameObject treeObject;
     public GameObject treeParent;
 
+    [Header("Cloud")]
+    public Material cloudMaterial;
+    public GameObject cloudParent;
+
     private void Awake()
     {
         if (Instance == null)
@@ -50,7 +54,7 @@ public class World : MonoBehaviour
             Destroy(gameObject);
         }
 
-        chunks = new Dictionary<Vector2Int, Chunk[]>();
+        chunks = new Dictionary<Vector2Int, ChunkData>();
         chunkQueue = new List<Vector2Int>();
         renderDistance = RENDER_DISTANCE;
     }
@@ -77,18 +81,21 @@ public class World : MonoBehaviour
         // Remove far chunks
         List<Vector2Int> keysToRemove = new List<Vector2Int>();
 
-        foreach ((Vector2Int chunkPosition, Chunk[] verticalChunks) in chunks)
+        foreach ((Vector2Int chunkPosition, ChunkData verticalChunks) in chunks)
         {
             if (chunkPosition.x > playerChunk.x + renderDistance || chunkPosition.x < playerChunk.x - renderDistance || chunkPosition.y > playerChunk.z + renderDistance || chunkPosition.y < playerChunk.z - renderDistance)
             {
-                // Destroy
-                for (int i = 0; i < verticalChunks.Length; i++)
+                // Destroy vertical chunks
+                for (int i = 0; i < verticalChunks.chunks.Length; i++)
                 {
-                    Destroy(verticalChunks[i].mesh);
+                    Destroy(verticalChunks.chunks[i].mesh);
 
-                    foreach (GameObject prefab in verticalChunks[i].prefabs)
+                    foreach (GameObject prefab in verticalChunks.chunks[i].prefabs)
                         Destroy(prefab);
                 }
+
+                // Destroy cloud
+                Destroy(verticalChunks.cloud.mesh);
 
                 keysToRemove.Add(chunkPosition);
             }
@@ -108,7 +115,7 @@ public class World : MonoBehaviour
     {
         render = true;
 
-        foreach (var chunkPosition in chunkQueue)
+        foreach (Vector2Int chunkPosition in chunkQueue)
         {
             if (!chunks.ContainsKey(chunkPosition))
             {
@@ -128,6 +135,10 @@ public class World : MonoBehaviour
 
         // Destroy trees
         foreach (Transform child in treeParent.transform)
+            Destroy(child.gameObject);
+
+        // Destroy clouds
+        foreach (Transform child in cloudParent.transform)
             Destroy(child.gameObject);
     }
 
@@ -158,7 +169,7 @@ public class World : MonoBehaviour
 
         // Init chunks
         int chunkHeight = Mathf.Max(heightMap.Max() / CHUNK_SIZE_NO_PADDING + 1, MIN_CHUNK_HEIGHT);
-        Chunk[] vChunks = new Chunk[chunkHeight];
+        Chunk[] verticalChunks = new Chunk[chunkHeight];
 
         for (int i = 0; i < chunkHeight; i++)
         {
@@ -250,14 +261,43 @@ public class World : MonoBehaviour
             }
 
             chunk.UpdateMesh();
-            vChunks[i] = chunk;
+            verticalChunks[i] = chunk;
         }
 
         heightMap.Dispose();
         treeMap.Dispose();
         snowMap.Dispose();
 
-        chunks.Add(chunkPosition, vChunks);
+        Cloud cloud = GenerateCloud(chunkPosition, new Vector3(position.x, CLOUD_HEIGHT, position.y) - new Vector3(1.5f, 1.5f, 1.5f));
+
+        ChunkData chunkData = new ChunkData(verticalChunks, cloud);
+        chunks.Add(chunkPosition, chunkData);
+    }
+
+    private Cloud GenerateCloud(Vector2Int chunkPosition, Vector3 worldPosition)
+    {
+        int2 position = new int2(chunkPosition.x * CHUNK_SIZE_NO_PADDING, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
+
+        GameObject gameObject = new GameObject(chunkPosition.x + "/" + chunkPosition.y);
+        gameObject.transform.position = worldPosition;
+        gameObject.transform.SetParent(cloudParent.transform);
+        gameObject.isStatic = true;
+
+        MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
+        MeshRenderer meshRenderer = gameObject.AddComponent<MeshRenderer>();
+        meshRenderer.material = cloudMaterial;
+
+        Mesh mesh = new Mesh();
+
+        meshFilter.mesh = mesh;
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+
+        Cloud cloud = new Cloud(gameObject, mesh, meshFilter, meshRenderer, position);
+
+        cloud.UpdateMap();
+        cloud.UpdateMesh();
+
+        return cloud;
     }
 
     public void SetBlock(Vector3Int worldPosition, int id)
@@ -311,16 +351,16 @@ public class World : MonoBehaviour
 
     public Chunk GetChunk(Vector3Int chunkPosition)
     {
-        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out Chunk[] chunk))
-            return chunk[chunkPosition.y];
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
+            return chunk.chunks[chunkPosition.y];
         else
             return null;
     }
 
     public bool IsValidChunk(Vector3Int chunkPosition)
     {
-        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out Chunk[] chunk))
-            return chunk[chunkPosition.y] != null;
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
+            return chunk.chunks[chunkPosition.y] != null;
         else
             return false;
     }
@@ -583,6 +623,18 @@ public class World : MonoBehaviour
 
             if (BlueNoise[yc * CHUNK_SIZE + xc] == max)
                 TreeMap[yc * CHUNK_SIZE + xc] = true;
+        }
+    }
+
+    private struct ChunkData
+    {
+        public Chunk[] chunks;
+        public Cloud cloud;
+
+        public ChunkData(Chunk[] chunks, Cloud cloud)
+        {
+            this.chunks = chunks;
+            this.cloud = cloud;
         }
     }
 }
