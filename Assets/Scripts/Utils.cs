@@ -5,24 +5,20 @@ using static Constants;
 public static class Utils
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector3Int WorldPositionToChunkPosition(Vector3Int position)
+    public static Vector3Int WorldPositionToChunkPosition(Vector3Int worldPosition)
     {
-        if (position.x < 0)
-            position.x -= CHUNK_SIZE_NO_PADDING - 1;
+        int x = Mathf.FloorToInt((float)worldPosition.x / CHUNK_SIZE_NO_PADDING);
+        int y = Mathf.FloorToInt((float)worldPosition.y / CHUNK_SIZE_NO_PADDING);
+        int z = Mathf.FloorToInt((float)worldPosition.z / CHUNK_SIZE_NO_PADDING);
 
-        if (position.z < 0)
-            position.z -= CHUNK_SIZE_NO_PADDING - 1;
-
-        position /= CHUNK_SIZE_NO_PADDING;
-
-        return position;
+        return new Vector3Int(x, y, z);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector3Int WorldPositionToChunkRelativePosition(Vector3Int position)
+    public static Vector3Int WorldPositionToChunkRelativePosition(Vector3Int worldPosition)
     {
-        Vector3Int chunkPosition = WorldPositionToChunkPosition(position);
-        return position - (chunkPosition * CHUNK_SIZE_NO_PADDING) + new Vector3Int(1, 1, 1);
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+        return worldPosition - (chunkPosition * CHUNK_SIZE_NO_PADDING) + new Vector3Int(1, 1, 1);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
