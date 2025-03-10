@@ -13,6 +13,7 @@ public class Player : MonoBehaviour
     public CinemachineInputAxisController cinemachineInput;
     public Movement movement;
     public Animator animator;
+    public Camera playerCamera;
 
     void Awake()
     {
@@ -53,5 +54,22 @@ public class Player : MonoBehaviour
     public void EnableActivity()
     {
         movement.activity = true;
+    }
+
+    public void Chop()
+    {
+        Ray ray = playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit, 100f))
+        {
+            GameObject hitObject = hit.collider.gameObject;
+
+            if (hitObject.CompareTag("Tree"))
+            {
+                Tree tree = hitObject.GetComponent<Tree>();
+                tree.TakeDamage(20);
+            }
+        }
     }
 }

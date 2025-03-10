@@ -246,7 +246,7 @@ public class World : MonoBehaviour
                     // Tree
                     if (treeMap[j] && heightMap[j] < MOUNTAIN_HEIGHT_START && heightMap[j] > WATER_HEIGHT)
                     {
-                        GameObject tree = Instantiate(treeObject, relativePosition + new Vector3(x, heightMap[j], z), Quaternion.identity);
+                        GameObject tree = Instantiate(treeObject, relativePosition + new Vector3(x, heightMap[j], z) + new Vector3(0.5f, 0, 0.5f), Quaternion.identity);
                         tree.transform.SetParent(treeParent.transform);
                         tree.isStatic = true;
                         StaticBatchingUtility.Combine(tree);
