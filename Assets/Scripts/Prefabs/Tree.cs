@@ -45,9 +45,15 @@ public class Tree : MonoBehaviour
         health -= damage;
 
         if (health <= 0)
+        {
             Destroy(gameObject);
+            ProgressBar.Instance.CloseProgress();
+            return;
+        }
 
         ChopTree();
+
+        ProgressBar.Instance.SetProgress(1f - (float)health / 100);
     }
 
     private void ChopTree()
