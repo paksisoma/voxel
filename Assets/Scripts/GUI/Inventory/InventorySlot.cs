@@ -6,12 +6,13 @@ public class InventorySlot : MonoBehaviour, IDropHandler, IPointerClickHandler
 {
     private Image slot;
 
-    public Sprite defaultSprite;
-    public Sprite activeSprite;
+    private Color defaultColor;
+    public Color activeColor;
 
     private void Awake()
     {
         slot = transform.GetComponent<Image>();
+        defaultColor = slot.color;
     }
 
     public void OnDrop(PointerEventData eventData)
@@ -72,8 +73,8 @@ public class InventorySlot : MonoBehaviour, IDropHandler, IPointerClickHandler
     public void ChangeSprite(bool value)
     {
         if (value)
-            slot.sprite = activeSprite;
+            slot.color = activeColor;
         else
-            slot.sprite = defaultSprite;
+            slot.color = defaultColor;
     }
 }
