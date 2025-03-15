@@ -1,7 +1,6 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -87,12 +86,11 @@ public class World : MonoBehaviour
             {
                 // Destroy vertical chunks
                 for (int i = 0; i < verticalChunks.chunks.Length; i++)
-                {
                     Destroy(verticalChunks.chunks[i].mesh);
 
-                    foreach (GameObject prefab in verticalChunks.chunks[i].prefabs)
-                        Destroy(prefab);
-                }
+                // Destroy trees
+                for (int i = 0; i < verticalChunks.trees.Count; i++)
+                    Destroy(verticalChunks.trees[i]);
 
                 // Destroy cloud
                 Destroy(verticalChunks.cloud.mesh);
@@ -144,39 +142,87 @@ public class World : MonoBehaviour
 
     private void GenerateChunk(Vector2Int chunkPosition)
     {
-        Vector2Int position = new Vector2Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
-        UnityEngine.Random.InitState(chunkPosition.x.GetHashCode() * chunkPosition.y.GetHashCode());
+        Vector2Int worldPosition = new Vector2Int(chunkPosition.x * CHUNK_SIZE_NO_PADDING, chunkPosition.y * CHUNK_SIZE_NO_PADDING);
 
-        NativeArray<int> heightMap = new NativeArray<int>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Height map
-        NativeArray<float> blueNoise = new NativeArray<float>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Blue noise
-        NativeArray<bool> snowMap = new NativeArray<bool>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent); // Snow map
+        // Terrain map generation
+        NativeArray<int> terrainMap = new NativeArray<int>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent);
+
+        TerrainJob terrainJob = new TerrainJob
+        {
+            Map = terrainMap,
+            Position = new int2(worldPosition.x, worldPosition.y),
+        };
+
+        var jobHandle1 = terrainJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64);
+
+        // Noise map generation for transition effects
+        NativeArray<float> noiseMap = new NativeArray<float>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent);
 
         NoiseJob noiseJob = new NoiseJob
         {
-            HeightMap = heightMap,
-            BlueNoise = blueNoise,
-            SnowMap = snowMap,
-            RelativePosition = new int2(position.x, position.y),
+            Map = noiseMap,
+            MapWidth = CHUNK_SIZE,
+            Position = new int2(worldPosition.x, worldPosition.y),
+            Frequency = 5,
         };
 
-        noiseJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64).Complete();
+        var jobHandle2 = noiseJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64);
 
-        // Tree map
-        NativeArray<bool> treeMap = new NativeArray<bool>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent);
-        TreeJob treeJob = new TreeJob { BlueNoise = blueNoise, TreeMap = treeMap };
-        treeJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64).Complete();
-        blueNoise.Dispose();
+        // Noise map generation for tree
+        int treeNoiseMapWidth = CHUNK_SIZE_NO_PADDING + (TREE_DENSITY * 2);
+        NativeArray<float> treeNoiseMap = new NativeArray<float>(treeNoiseMapWidth * treeNoiseMapWidth, Allocator.Persistent);
 
-        // Init chunks
-        int chunkHeight = Mathf.Max(heightMap.Max() / CHUNK_SIZE_NO_PADDING + 1, MIN_CHUNK_HEIGHT);
-        Chunk[] verticalChunks = new Chunk[chunkHeight];
-
-        for (int i = 0; i < chunkHeight; i++)
+        NoiseJob treeNoiseJob = new NoiseJob
         {
-            Vector3 relativePosition = new Vector3(position.x, i * CHUNK_SIZE_NO_PADDING, position.y) - new Vector3(1.5f, 1.5f, 1.5f);
+            Map = treeNoiseMap,
+            MapWidth = treeNoiseMapWidth,
+            Position = new int2(worldPosition.x, worldPosition.y),
+            Frequency = 5,
+        };
+
+        var jobHandle3 = treeNoiseJob.Schedule(treeNoiseMapWidth * treeNoiseMapWidth, 64);
+
+        // Forest map generation
+        NativeArray<float> forestMap = new NativeArray<float>(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, Allocator.Persistent);
+
+        NoiseJob forestJob = new NoiseJob
+        {
+            Map = forestMap,
+            MapWidth = CHUNK_SIZE_NO_PADDING,
+            Position = new int2(worldPosition.x + 10000, worldPosition.y + 10000),
+            Frequency = 1000,
+        };
+
+        var jobHandle4 = forestJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64);
+
+        // Complete jobs
+        JobHandle.CombineDependencies(jobHandle1, jobHandle2).Complete();
+        JobHandle.CombineDependencies(jobHandle3, jobHandle4).Complete();
+
+        // Tree map generation
+        NativeArray<bool> treeMap = new NativeArray<bool>(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, Allocator.Persistent);
+
+        PeakJob treeJob = new PeakJob
+        {
+            InputMap = treeNoiseMap,
+            InputMapWidth = treeNoiseMapWidth,
+            OutputMap = treeMap,
+            OutputMapWidth = CHUNK_SIZE_NO_PADDING,
+            Radius = TREE_DENSITY,
+        };
+
+        treeJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64).Complete(); // Can't combine the job because treeNoiseMap is needed
+
+        // Vertical chunks
+        Chunk[] verticalChunks = new Chunk[CHUNK_HEIGHT];
+        List<GameObject> trees = new List<GameObject>();
+
+        for (int i = 0; i < CHUNK_HEIGHT; i++)
+        {
+            Vector3Int position = new Vector3Int(worldPosition.x, i * CHUNK_SIZE_NO_PADDING, worldPosition.y);
 
             GameObject gameObject = new GameObject(chunkPosition.x + "/" + i + "/" + chunkPosition.y);
-            gameObject.transform.position = relativePosition;
+            gameObject.transform.position = position - new Vector3(1.5f, 1.5f, 1.5f); ;
             gameObject.transform.SetParent(chunkParent.transform);
             gameObject.isStatic = true;
 
@@ -189,88 +235,117 @@ public class World : MonoBehaviour
             meshFilter.mesh = mesh;
             mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 
+            // Terrain placement
             Chunk chunk = new Chunk(gameObject, mesh, meshFilter, meshRenderer, meshCollider);
 
-            // Set blocks
-            for (int j = 0; j < heightMap.Length; j++)
+            for (int j = 0; j < terrainMap.Length; j++)
             {
                 int x = j / CHUNK_SIZE;
                 int z = j % CHUNK_SIZE;
+                int height = Mathf.Min(terrainMap[j] - (i * CHUNK_SIZE_NO_PADDING), CHUNK_SIZE);
 
-                int height = Mathf.Min(heightMap[j] - (i * CHUNK_SIZE_NO_PADDING), CHUNK_SIZE);
+                if (height <= 0)
+                    continue;
 
-                if (height > 0)
+                for (int y = 0; y < height - 1; y++) // Stone
+                    chunk.AddSolid(x, y, z, 2);
+
+                for (int y = terrainMap[j]; y < WATER_HEIGHT; y++) // Water
+                    chunk.AddWater(x, y, z);
+
+                // Biome
+                bool snowBiome = false;
+
+                int zPosition = position.z + z;
+
+                if (zPosition > SNOW_BIOME_TRANSITION_START)
                 {
-                    // Snow biome
-                    if (snowMap[j])
+                    if (zPosition > SNOW_BIOME_TRANSITION_END)
                     {
-                        for (int y = 0; y < height - 1; y++)
-                            chunk.AddSolid(x, y, z, 2); // Stone
-
-                        // Under water
-                        if (heightMap[j] < WATER_HEIGHT)
-                            chunk.AddSolid(x, height - 1, z, 6); // Dirt
-                        else
-                            chunk.AddSolid(x, height - 1, z, 5); // Snow
+                        snowBiome = true;
                     }
-                    else // Normal biome
+                    else
                     {
-                        for (int y = 0; y < height - 1; y++)
-                            chunk.AddSolid(x, y, z, 2); // Stone
+                        float transitionValue = (SNOW_BIOME_TRANSITION_END - zPosition) / (float)(SNOW_BIOME_TRANSITION_END - SNOW_BIOME_TRANSITION_START);
 
-                        if (heightMap[j] < WATER_HEIGHT + 1)
-                        {
-                            chunk.AddSolid(x, height - 1, z, 4); // Sand
-                        }
+                        if (noiseMap[j] > transitionValue)
+                            snowBiome = true;
                         else
-                        {
-                            if (heightMap[j] > MOUNTAIN_HEIGHT_START)
-                            {
-                                bool stone = Mathf.Abs(MOUNTAIN_HEIGHT_START - heightMap[j]) >= UnityEngine.Random.Range(0, 20);
+                            snowBiome = false;
+                    }
+                }
 
-                                if (stone)
-                                    chunk.AddSolid(x, height - 1, z, 2); // Stone
-                                else
-                                    chunk.AddSolid(x, height - 1, z, 1); // Grass
-                            }
+                if (snowBiome) // Snow biome
+                {
+                    if (terrainMap[j] < WATER_HEIGHT)
+                        chunk.AddSolid(x, height - 1, z, 6); // Dirt
+                    else
+                        chunk.AddSolid(x, height - 1, z, 5); // Snow
+                }
+                else // Grass biome
+                {
+                    if (terrainMap[j] < WATER_HEIGHT + 1) // Sand
+                    {
+                        chunk.AddSolid(x, height - 1, z, 4);
+                    }
+                    else if (terrainMap[j] > MOUNTAIN_TRANSITION_START) // Mountain
+                    {
+                        if (terrainMap[j] > MOUNTAIN_TRANSITION_END) // Stone
+                        {
+                            chunk.AddSolid(x, height - 1, z, 2);
+                        }
+                        else // Grass, stone transition
+                        {
+                            float transitionValue = (MOUNTAIN_TRANSITION_END - terrainMap[j]) / (float)(MOUNTAIN_TRANSITION_END - MOUNTAIN_TRANSITION_START);
+
+                            if (noiseMap[j] > transitionValue)
+                                chunk.AddSolid(x, height - 1, z, 2);
                             else
-                            {
-                                chunk.AddSolid(x, height - 1, z, 1); // Grass
-                            }
+                                chunk.AddSolid(x, height - 1, z, 1);
                         }
                     }
-                }
-
-                if (i == 0)
-                {
-                    // Tree
-                    if (treeMap[j] && heightMap[j] < MOUNTAIN_HEIGHT_START && heightMap[j] > WATER_HEIGHT)
+                    else // Grass
                     {
-                        GameObject tree = Instantiate(treeObject, relativePosition + new Vector3(x, heightMap[j], z) + new Vector3(0.5f, 0, 0.5f), Quaternion.identity);
-                        tree.transform.SetParent(treeParent.transform);
-                        tree.isStatic = true;
-                        StaticBatchingUtility.Combine(tree);
-                        chunk.prefabs.Add(tree);
+                        chunk.AddSolid(x, height - 1, z, 1);
                     }
-
-                    // Water
-                    for (int y = height; y < WATER_HEIGHT; y++)
-                        chunk.AddWater(x, y, z);
                 }
-
             }
 
             chunk.UpdateMesh();
             verticalChunks[i] = chunk;
         }
 
-        heightMap.Dispose();
+        // Tree placement
+        for (int i = 0; i < treeMap.Length; i++)
+        {
+            if (treeMap[i] && forestMap[i] > 0.5f)
+            {
+                int x = i / CHUNK_SIZE_NO_PADDING;
+                int z = i % CHUNK_SIZE_NO_PADDING;
+
+                int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+                // Place tree above water and under mountain
+                if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                {
+                    GameObject tree = Instantiate(treeObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
+                    tree.transform.SetParent(treeParent.transform);
+                    tree.isStatic = true;
+                    StaticBatchingUtility.Combine(tree);
+                    trees.Add(tree);
+                }
+            }
+        }
+
+        terrainMap.Dispose();
+        noiseMap.Dispose();
+        treeNoiseMap.Dispose();
         treeMap.Dispose();
-        snowMap.Dispose();
+        forestMap.Dispose();
 
-        Cloud cloud = GenerateCloud(chunkPosition, new Vector3(position.x, CLOUD_HEIGHT, position.y) - new Vector3(1.5f, 1.5f, 1.5f));
+        Cloud cloud = GenerateCloud(chunkPosition, new Vector3(worldPosition.x, CLOUD_HEIGHT, worldPosition.y) - new Vector3(1.5f, 1.5f, 1.5f));
 
-        ChunkData chunkData = new ChunkData(verticalChunks, cloud);
+        ChunkData chunkData = new ChunkData(verticalChunks, cloud, trees);
         chunks.Add(chunkPosition, chunkData);
     }
 
@@ -363,6 +438,16 @@ public class World : MonoBehaviour
             return chunk.chunks[chunkPosition.y] != null;
         else
             return false;
+    }
+
+    public int GetGroundPosition(Vector3Int worldPosition)
+    {
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(worldPosition);
+
+        Chunk chunk = GetChunk(chunkPosition);
+
+        return chunk.GetGroundPosition(relativePosition) + (chunkPosition.y * CHUNK_SIZE_NO_PADDING);
     }
 
     public bool IsGround(Vector3Int position)
@@ -513,128 +598,17 @@ public class World : MonoBehaviour
         return path;
     }
 
-    [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
-    private struct NoiseJob : IJobParallelFor
-    {
-        [WriteOnly]
-        public NativeArray<int> HeightMap;
-
-        [WriteOnly]
-        public NativeArray<float> BlueNoise;
-
-        [WriteOnly]
-        public NativeArray<bool> SnowMap;
-
-        [ReadOnly]
-        public int2 RelativePosition;
-
-        public void Execute(int i)
-        {
-            float2 position = new float2(i / CHUNK_SIZE + RelativePosition.x, i % CHUNK_SIZE + RelativePosition.y);
-
-            // Mountains
-            float noise1000 = Noise(position, 1000);
-
-            float a = 1f * Noise(position, 5000) +
-                            1f * Noise(position, 2000) +
-                            1f * noise1000 * Noise(position, 500) +
-                            0.5f * noise1000 * Noise(position, 100) +
-                            0.25f * noise1000 * Noise(position, 50) +
-                            0.1f * noise1000 * Noise(position, 30);
-
-            a /= 1f + 1f + 1f + 0.5f + 0.25f + 0.1f;
-            a = math.pow(a, 4f);
-
-            // Hills
-            float2 position10000 = position + 10000;
-
-            float b = 1f * Noise(position10000, 1000) +
-                    0.5f * Noise(position10000, 500) +
-                    0.25f * Noise(position10000, 250) +
-                    0.1f * Noise(position10000, 250) * Noise(position10000, 50);
-
-            b /= 1f + 0.5f + 0.25f + 0.1f;
-            b *= 0.5f;
-
-            // Height map
-            a += b;
-
-            HeightMap[i] = Mathf.RoundToInt(a * (HIGHEST_BLOCK - 2)) + 2;
-
-            // Blue noise
-            float c = 0;
-
-            if (Noise(position10000, 1000) > 0.5f)
-                c = Noise(position10000, 1);
-
-            BlueNoise[i] = c;
-
-            // Snow map
-            if (position.y > Noise(position, 10) * 50 + SNOW_BIOME_START)
-                SnowMap[i] = true;
-        }
-
-        public float Noise(float2 position, float frequency)
-        {
-            position /= frequency;
-            return (noise.snoise(position) + 1) / 2;
-        }
-    }
-
-    [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
-    private struct TreeJob : IJobParallelFor
-    {
-        [ReadOnly]
-        public NativeArray<float> BlueNoise;
-
-        [WriteOnly]
-        public NativeArray<bool> TreeMap;
-
-        public void Execute(int i)
-        {
-            if (BlueNoise[i] == 0)
-                return;
-
-            int xc = i % CHUNK_SIZE;
-            int yc = i / CHUNK_SIZE;
-
-            int radius = 10;
-
-            float max = 0;
-
-            for (int dy = -radius; dy <= radius; dy++)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    int xn = dx + xc;
-                    int yn = dy + yc;
-
-                    int index = yn * CHUNK_SIZE + xn;
-
-                    if (index >= 0 && index < BlueNoise.Length)
-                    {
-                        float e = BlueNoise[yn * CHUNK_SIZE + xn];
-
-                        if (e > max)
-                            max = e;
-                    }
-                }
-            }
-
-            if (BlueNoise[yc * CHUNK_SIZE + xc] == max)
-                TreeMap[yc * CHUNK_SIZE + xc] = true;
-        }
-    }
-
     private struct ChunkData
     {
         public Chunk[] chunks;
         public Cloud cloud;
+        public List<GameObject> trees;
 
-        public ChunkData(Chunk[] chunks, Cloud cloud)
+        public ChunkData(Chunk[] chunks, Cloud cloud, List<GameObject> trees)
         {
             this.chunks = chunks;
             this.cloud = cloud;
+            this.trees = trees;
         }
     }
 }

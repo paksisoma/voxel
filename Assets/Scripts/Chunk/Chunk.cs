@@ -22,8 +22,6 @@ public class Chunk
     public MeshRenderer meshRenderer { get; }
     public MeshCollider meshCollider { get; }
 
-    public List<GameObject> prefabs = new List<GameObject>();
-
     public Chunk(GameObject gameObject, Mesh mesh, MeshFilter meshFilter, MeshRenderer meshRenderer, MeshCollider meshCollider)
     {
         this.gameObject = gameObject;
