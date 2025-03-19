@@ -5,6 +5,8 @@ public class MouseHandler : MonoBehaviour
     public Camera playerCamera;
     public float maxDistance = 100f;
 
+    public Item rock;
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -30,14 +32,17 @@ public class MouseHandler : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit, maxDistance))
             {
-                Vector3Int hitPoint = Vector3Int.RoundToInt(hit.point - hit.normal * 0.5f);
+                Vector3Int worldPosition = Vector3Int.RoundToInt(hit.point - hit.normal * 0.5f);
 
-                int blockID = World.Instance.GetBlock(hitPoint);
+                worldPosition.y++;
 
-                if (Blocks.Instance.blocksID.ContainsKey(blockID))
-                    InventoryManager.Instance.AddItem(Blocks.Instance.blocksID[blockID]);
+                GameObject prefab = World.Instance.GetPrefab(worldPosition);
 
-                World.Instance.SetBlock(hitPoint, 0);
+                if (prefab != null && prefab.CompareTag("Rock"))
+                {
+                    Destroy(prefab);
+                    InventoryManager.Instance.AddItem(rock);
+                }
             }
         }
         else

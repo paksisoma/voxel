@@ -37,6 +37,10 @@ public class World : MonoBehaviour
     public GameObject treeObject;
     public GameObject treeParent;
 
+    [Header("Rock")]
+    public GameObject rockObject;
+    public GameObject rockParent;
+
     [Header("Cloud")]
     public Material cloudMaterial;
     public GameObject cloudParent;
@@ -88,9 +92,9 @@ public class World : MonoBehaviour
                 for (int i = 0; i < verticalChunks.chunks.Length; i++)
                     Destroy(verticalChunks.chunks[i].mesh);
 
-                // Destroy trees
-                for (int i = 0; i < verticalChunks.trees.Count; i++)
-                    Destroy(verticalChunks.trees[i]);
+                // Destroy prefabs
+                foreach (GameObject prefab in verticalChunks.prefabs.Values)
+                    Destroy(prefab);
 
                 // Destroy cloud
                 Destroy(verticalChunks.cloud.mesh);
@@ -213,9 +217,36 @@ public class World : MonoBehaviour
 
         treeJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64).Complete(); // Can't combine the job because treeNoiseMap is needed
 
+        // Rock noise generation
+        int rockNoiseMapWidth = CHUNK_SIZE_NO_PADDING + (TREE_DENSITY * 2);
+        NativeArray<float> rockNoiseMap = new NativeArray<float>(rockNoiseMapWidth * rockNoiseMapWidth, Allocator.Persistent);
+
+        NoiseJob rockNoiseJob = new NoiseJob
+        {
+            Map = rockNoiseMap,
+            MapWidth = rockNoiseMapWidth,
+            Position = new int2(worldPosition.x + 10000, worldPosition.y + 10000),
+            Frequency = 5,
+        };
+
+        rockNoiseJob.Schedule(rockNoiseMapWidth * rockNoiseMapWidth, 64).Complete();
+
+        // Rock map generation
+        NativeArray<bool> rockMap = new NativeArray<bool>(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, Allocator.Persistent);
+
+        PeakJob rockJob = new PeakJob
+        {
+            InputMap = rockNoiseMap,
+            InputMapWidth = rockNoiseMapWidth,
+            OutputMap = rockMap,
+            OutputMapWidth = CHUNK_SIZE_NO_PADDING,
+            Radius = TREE_DENSITY,
+        };
+
+        rockJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64).Complete();
+
         // Vertical chunks
         Chunk[] verticalChunks = new Chunk[CHUNK_HEIGHT];
-        List<GameObject> trees = new List<GameObject>();
 
         for (int i = 0; i < CHUNK_HEIGHT; i++)
         {
@@ -315,15 +346,19 @@ public class World : MonoBehaviour
             verticalChunks[i] = chunk;
         }
 
-        // Tree placement
+        // Prefabs placement
+        Dictionary<Vector3Int, GameObject> prefabs = new Dictionary<Vector3Int, GameObject>();
+
         for (int i = 0; i < treeMap.Length; i++)
         {
-            if (treeMap[i] && forestMap[i] > 0.5f)
+            if (treeMap[i] && forestMap[i] > 0.5f) // Tree
             {
                 int x = i / CHUNK_SIZE_NO_PADDING;
                 int z = i % CHUNK_SIZE_NO_PADDING;
 
                 int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+                int y = height % CHUNK_SIZE_NO_PADDING;
 
                 // Place tree above water and under mountain
                 if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
@@ -332,7 +367,28 @@ public class World : MonoBehaviour
                     tree.transform.SetParent(treeParent.transform);
                     tree.isStatic = true;
                     StaticBatchingUtility.Combine(tree);
-                    trees.Add(tree);
+                    prefabs.Add(new Vector3Int(x, y, z), tree);
+                }
+            }
+            else if (treeMap[i] == false && rockMap[i] && forestMap[i] > 0.5f) // Stone
+            {
+                int x = i / CHUNK_SIZE_NO_PADDING;
+                int z = i % CHUNK_SIZE_NO_PADDING;
+
+                int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+                int y = height % CHUNK_SIZE_NO_PADDING;
+
+                // Place rock above water and under mountain
+                if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                {
+                    GameObject rock = Instantiate(rockObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
+                    rock.transform.SetParent(rockParent.transform);
+                    rock.isStatic = true;
+                    rock.transform.Rotate(0f, (float)rockNoiseMap[i] * 180, 0f, Space.World);
+                    StaticBatchingUtility.Combine(rock);
+
+                    prefabs.Add(new Vector3Int(x + 1, y, z + 1), rock);
                 }
             }
         }
@@ -342,10 +398,12 @@ public class World : MonoBehaviour
         treeNoiseMap.Dispose();
         treeMap.Dispose();
         forestMap.Dispose();
+        rockNoiseMap.Dispose();
+        rockMap.Dispose();
 
         Cloud cloud = GenerateCloud(chunkPosition, new Vector3(worldPosition.x, CLOUD_HEIGHT, worldPosition.y) - new Vector3(1.5f, 1.5f, 1.5f));
 
-        ChunkData chunkData = new ChunkData(verticalChunks, cloud, trees);
+        ChunkData chunkData = new ChunkData(verticalChunks, cloud, prefabs);
         chunks.Add(chunkPosition, chunkData);
     }
 
@@ -378,7 +436,7 @@ public class World : MonoBehaviour
     public void SetBlock(Vector3Int worldPosition, int id)
     {
         Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
-        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(worldPosition);
+        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
 
         Chunk chunk = GetChunk(chunkPosition);
         chunk.SetBlock(relativePosition, id);
@@ -417,7 +475,7 @@ public class World : MonoBehaviour
     public int GetBlock(Vector3Int worldPosition)
     {
         Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
-        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(worldPosition);
+        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
 
         Chunk chunk = GetChunk(chunkPosition);
 
@@ -443,7 +501,7 @@ public class World : MonoBehaviour
     public int GetGroundPosition(Vector3Int worldPosition)
     {
         Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
-        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(worldPosition);
+        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
 
         Chunk chunk = GetChunk(chunkPosition);
 
@@ -455,6 +513,18 @@ public class World : MonoBehaviour
         Vector3Int down = position + Vector3Int.down;
 
         return GetBlock(position) == 0 && GetBlock(down) != 0;
+    }
+
+    public GameObject GetPrefab(Vector3Int worldPosition)
+    {
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
+
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
+            if (chunk.prefabs.TryGetValue(relativePosition, out GameObject gameObject))
+                return gameObject;
+
+        return null;
     }
 
     public IEnumerable<Vector3Int> GetNeighbourBlocks(Vector3Int position)
@@ -598,17 +668,17 @@ public class World : MonoBehaviour
         return path;
     }
 
-    private struct ChunkData
+    public struct ChunkData
     {
         public Chunk[] chunks;
         public Cloud cloud;
-        public List<GameObject> trees;
+        public Dictionary<Vector3Int, GameObject> prefabs;
 
-        public ChunkData(Chunk[] chunks, Cloud cloud, List<GameObject> trees)
+        public ChunkData(Chunk[] chunks, Cloud cloud, Dictionary<Vector3Int, GameObject> prefabs)
         {
             this.chunks = chunks;
             this.cloud = cloud;
-            this.trees = trees;
+            this.prefabs = prefabs;
         }
     }
 }

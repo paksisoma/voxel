@@ -1458,6 +1458,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 42d8b4c8ed38dcf408d966c8f171114f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &491188892
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 491188893}
+  m_Layer: 0
+  m_Name: Rocks
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &491188893
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 491188892}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1644947903}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &521164899
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1713,6 +1744,7 @@ MonoBehaviour:
   playerCamera: {fileID: 1560936181}
   maxDistance: 100
   axe: {fileID: 11400000, guid: 26d890e50acb14744a448a233f56f4d4, type: 2}
+  rock: {fileID: 11400000, guid: 9437f59bfaf91aa469014f3c0db3984b, type: 2}
 --- !u!1001 &602086611
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6269,6 +6301,8 @@ MonoBehaviour:
   chunkParent: {fileID: 230474780}
   treeObject: {fileID: 5330539537610832871, guid: 8f80670192733ee49b6dfe681d4f38d5, type: 3}
   treeParent: {fileID: 542081720}
+  rockObject: {fileID: 5509260281904406681, guid: 46749f29c6c158747b21c1c5eb534353, type: 3}
+  rockParent: {fileID: 491188892}
   cloudMaterial: {fileID: 2100000, guid: 42c8c410730f94842b0390273ec887bb, type: 2}
   cloudParent: {fileID: 439842122}
 --- !u!4 &1644947903
@@ -6287,6 +6321,7 @@ Transform:
   - {fileID: 230474781}
   - {fileID: 542081721}
   - {fileID: 439842123}
+  - {fileID: 491188893}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1644947904

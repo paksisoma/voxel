@@ -15,9 +15,8 @@ public static class Utils
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector3Int WorldPositionToChunkRelativePosition(Vector3Int worldPosition)
+    public static Vector3Int WorldPositionToChunkRelativePosition(Vector3Int chunkPosition, Vector3Int worldPosition)
     {
-        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
         return worldPosition - (chunkPosition * CHUNK_SIZE_NO_PADDING) + new Vector3Int(1, 1, 1);
     }
 
