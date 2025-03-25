@@ -90,6 +90,49 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
+    public InventoryItem GetItem(Item item)
+    {
+        foreach (InventorySlot slot in slots)
+        {
+            InventoryItem inventoryItem = slot.GetComponentInChildren<InventoryItem>();
+
+            if (inventoryItem.item.itemID == item.itemID)
+                return inventoryItem;
+        }
+
+        return null;
+    }
+
+    public int CountItemsQuantity(Item item)
+    {
+        int quantity = 0;
+
+        foreach (InventorySlot slot in slots)
+        {
+            InventoryItem inventoryItem = slot.GetComponentInChildren<InventoryItem>();
+
+            if (inventoryItem != null && inventoryItem.item.itemID == item.itemID)
+                quantity += inventoryItem.quantity;
+        }
+
+        return quantity;
+    }
+
+    public int CountEmptySlots()
+    {
+        int count = 0;
+
+        foreach (InventorySlot slot in slots)
+        {
+            InventoryItem inventoryItem = slot.GetComponentInChildren<InventoryItem>();
+
+            if (inventoryItem == null)
+                count++;
+        }
+
+        return count;
+    }
+
     private void SpawnItem(Item item, InventorySlot slot)
     {
         GameObject newItem = Instantiate(itemPrefab, slot.transform);

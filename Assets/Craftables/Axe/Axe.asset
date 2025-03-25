@@ -9,10 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b79b2dffb96555347a95d2cc8db799ac, type: 3}
-  m_Name: Rock
+  m_Script: {fileID: 11500000, guid: e086d1244754e6d4fa827dfe8b982b6b, type: 3}
+  m_Name: Axe
   m_EditorClassIdentifier: 
-  itemName: Rock
-  itemID: 1
-  itemImage: {fileID: 21300000, guid: 8c1828b3ea917ef49a71f75d05775839, type: 3}
-  stackable: 1
+  craftInput:
+  - {fileID: 11400000, guid: 40fda0b64c1ce4448a96ceabb42cddb2, type: 2}
+  craftOutput: {fileID: 11400000, guid: 29e728530df485a47bf99df170e75a99, type: 2}

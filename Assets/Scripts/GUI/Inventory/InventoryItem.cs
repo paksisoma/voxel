@@ -19,16 +19,11 @@ public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public int quantity = 1;
 
-    private void Start()
-    {
-        Init(item);
-    }
-
     public void Init(Item item)
     {
         this.item = item;
         image.sprite = item.itemImage;
-        slot = transform.GetComponentInParent<InventorySlot>();
+        slot = transform.GetComponentInParent<InventorySlot>(true);
     }
 
     public void UpdateQuantity()
@@ -37,7 +32,7 @@ public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         {
             slot.ChangeSprite(false);
             InventoryManager.Instance.activeItem = null;
-            Destroy(transform.gameObject);
+            DestroyImmediate(transform.gameObject);
         }
         else
         {
