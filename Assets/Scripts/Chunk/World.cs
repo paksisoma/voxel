@@ -90,7 +90,8 @@ public class World : MonoBehaviour
             {
                 // Destroy vertical chunks
                 for (int i = 0; i < verticalChunks.chunks.Length; i++)
-                    Destroy(verticalChunks.chunks[i].mesh);
+                    if (verticalChunks.chunks[i] != null)
+                        Destroy(verticalChunks.chunks[i].mesh);
 
                 // Destroy prefabs
                 foreach (GameObject prefab in verticalChunks.prefabs.Values)
@@ -248,7 +249,9 @@ public class World : MonoBehaviour
         // Vertical chunks
         Chunk[] verticalChunks = new Chunk[CHUNK_HEIGHT];
 
-        for (int i = 0; i < CHUNK_HEIGHT; i++)
+        int currentHeight = Mathf.Max(terrainMap.Max() / CHUNK_SIZE_NO_PADDING + 1, MIN_CHUNK_HEIGHT);
+
+        for (int i = 0; i < currentHeight; i++)
         {
             Vector3Int position = new Vector3Int(worldPosition.x, i * CHUNK_SIZE_NO_PADDING, worldPosition.y);
 
@@ -433,7 +436,7 @@ public class World : MonoBehaviour
         return cloud;
     }
 
-    public void SetBlock(Vector3Int worldPosition, int id)
+    public void SetBlock(Vector3Int worldPosition, byte id)
     {
         Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
         Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
@@ -442,7 +445,7 @@ public class World : MonoBehaviour
         chunk.SetBlock(relativePosition, id);
         chunk.UpdateMesh();
 
-        void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int relativePosition, int id, int axis)
+        void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int relativePosition, byte id, int axis)
         {
             Vector3Int neighbourChunkPosition = chunkPosition;
             Vector3Int neighbourRelativePosition = relativePosition;

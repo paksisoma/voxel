@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
@@ -14,7 +13,7 @@ public class Chunk
 {
     private ulong[] solidBlocks = new ulong[3 * CHUNK_SIZE * CHUNK_SIZE];
     private ulong[] waterBlocks = new ulong[3 * CHUNK_SIZE * CHUNK_SIZE];
-    private int[] idBlocks = new int[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
+    private byte[] idBlocks = new byte[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
 
     public GameObject gameObject { get; }
     public Mesh mesh { get; }
@@ -31,7 +30,7 @@ public class Chunk
         this.meshCollider = meshCollider;
     }
 
-    public void AddSolid(int x, int y, int z, int id)
+    public void AddSolid(int x, int y, int z, byte id)
     {
         idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + (y * CHUNK_SIZE + x)] = id;
         solidBlocks[(CHUNK_SIZE * CHUNK_SIZE * 0) + (z * CHUNK_SIZE + x)] |= 1ul << y;
@@ -40,7 +39,7 @@ public class Chunk
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddSolid(Vector3Int position, int id)
+    public void AddSolid(Vector3Int position, byte id)
     {
         AddSolid(position.x, position.y, position.z, id);
     }
@@ -87,7 +86,7 @@ public class Chunk
         RemoveWater(position.x, position.y, position.z);
     }
 
-    public void SetBlock(int x, int y, int z, int id)
+    public void SetBlock(int x, int y, int z, byte id)
     {
         if (id == 0)
         {
@@ -109,7 +108,7 @@ public class Chunk
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetBlock(Vector3Int position, int id)
+    public void SetBlock(Vector3Int position, byte id)
     {
         SetBlock(position.x, position.y, position.z, id);
     }
@@ -147,7 +146,7 @@ public class Chunk
 
         NativeArray<ulong> sBlocks = new NativeArray<ulong>(solidBlocks, Allocator.Persistent);
         NativeArray<ulong> wBlocks = new NativeArray<ulong>(waterBlocks, Allocator.Persistent);
-        NativeArray<int> iBlocks = new NativeArray<int>(idBlocks, Allocator.Persistent);
+        NativeArray<byte> iBlocks = new NativeArray<byte>(idBlocks, Allocator.Persistent);
 
         MeshJob job = new MeshJob
         {
@@ -209,7 +208,7 @@ public class Chunk
         public NativeArray<ulong> WaterBlocks;
 
         [ReadOnly]
-        public NativeArray<int> IdBlocks;
+        public NativeArray<byte> IdBlocks;
 
         [ReadOnly]
         public UnsafeHashMap<int, BlockProperties> BlockProperties;
