@@ -1,4 +1,3 @@
-using Unity.Cinemachine;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
@@ -10,7 +9,6 @@ public class Player : MonoBehaviour
     public Vector3Int chunkPosition { get; private set; }
 
     public GameObject rightHandParent;
-    public CinemachineInputAxisController cinemachineInput;
     public Movement movement;
     public Animator animator;
     public Camera playerCamera;
@@ -82,12 +80,12 @@ public class Player : MonoBehaviour
 
     public void DisableCameraMouse()
     {
-        cinemachineInput.enabled = false;
+        ThirdPersonCamera.Instance.active = false;
     }
 
     public void EnableCameraMouse()
     {
-        cinemachineInput.enabled = true;
+        ThirdPersonCamera.Instance.active = true;
     }
 
     public void DisableActivity()
