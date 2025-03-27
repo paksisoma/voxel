@@ -475,7 +475,7 @@ public class World : MonoBehaviour
         UpdateNeighbourBlock(chunkPosition, relativePosition, id, 2); // Z
     }
 
-    public int GetBlock(Vector3Int worldPosition)
+    public byte GetBlock(Vector3Int worldPosition)
     {
         Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
         Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);

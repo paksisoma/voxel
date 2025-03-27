@@ -90,6 +90,12 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
+    public void AddItem(byte id)
+    {
+        if (Items.Instance.TryGetItemByID(id, out Item item))
+            AddItem(item);
+    }
+
     public InventoryItem GetItem(Item item)
     {
         foreach (InventorySlot slot in slots)

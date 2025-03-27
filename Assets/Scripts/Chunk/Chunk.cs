@@ -113,13 +113,13 @@ public class Chunk
         SetBlock(position.x, position.y, position.z, id);
     }
 
-    public int GetBlock(int x, int y, int z)
+    public byte GetBlock(int x, int y, int z)
     {
         return idBlocks[(CHUNK_SIZE * CHUNK_SIZE * z) + y * CHUNK_SIZE + x];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetBlock(Vector3Int position)
+    public byte GetBlock(Vector3Int position)
     {
         return GetBlock(position.x, position.y, position.z);
     }

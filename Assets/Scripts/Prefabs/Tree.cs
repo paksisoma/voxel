@@ -27,16 +27,6 @@ public class Tree : MonoBehaviour
                 isTilting = false;
                 tiltProgress = 0f;
             }
-            /*else if (tiltProgress >= 1f && health <= 0)
-            {
-                Rigidbody rb = GetComponent<Rigidbody>();
-                if (rb == null)
-                    rb = gameObject.AddComponent<Rigidbody>();
-                    
-                rb.isKinematic = false;
-                rb.useGravity = true;
-                rb.angularVelocity = -Player.Instance.transform.forward * 1f;
-            }*/
         }
     }
 
@@ -50,13 +40,9 @@ public class Tree : MonoBehaviour
             ProgressBar.Instance.CloseProgress();
             return;
         }
-
-        ChopTree();
-
-        ProgressBar.Instance.SetProgress(1f - (float)health / 100);
     }
 
-    private void ChopTree()
+    public void ChopTree()
     {
         if (!isTilting)
         {

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Axe
   m_EditorClassIdentifier: 
   itemName: Axe
-  itemID: 0
+  itemID: 100
   itemImage: {fileID: 0}
   stackable: 0
   model: {fileID: 633056988599358560, guid: 08f65c3a52669c9479001908fc7cb187, type: 3}
