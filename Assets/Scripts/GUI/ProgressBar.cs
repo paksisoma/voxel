@@ -46,7 +46,7 @@ public class ProgressBar : MonoBehaviour
     {
         timer = 0f;
         progressBar.SetActive(true);
-        float newWidth = maxWidth * percent;
+        float newWidth = maxWidth * (percent - 1);
         progressTransform.sizeDelta = new Vector2(newWidth, progressTransform.sizeDelta.y);
     }
 

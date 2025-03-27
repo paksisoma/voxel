@@ -15,6 +15,50 @@ public class Player : MonoBehaviour
     public Animator animator;
     public Camera playerCamera;
 
+    private float _health = 1f;
+    public float health
+    {
+        get => _health;
+        set
+        {
+            _health = value;
+            HudManager.Instance.SetHealth(value);
+        }
+    }
+
+    private float _hunger = 1f;
+    public float hunger
+    {
+        get => _hunger;
+        set
+        {
+            _hunger = value;
+            HudManager.Instance.SetHunger(value);
+        }
+    }
+
+    private float _thirst = 1f;
+    public float thirst
+    {
+        get => _thirst;
+        set
+        {
+            _thirst = value;
+            HudManager.Instance.SetThirst(value);
+        }
+    }
+
+    private float _temperature = 1f;
+    public float temperature
+    {
+        get => _temperature;
+        set
+        {
+            _temperature = value;
+            HudManager.Instance.SetTemperature(value);
+        }
+    }
+
     void Awake()
     {
         if (Instance == null)
