@@ -17,6 +17,8 @@ public class Movement : MonoBehaviour
     [HideInInspector]
     public bool activity = true;
 
+    private bool previousIsGrounded = false;
+
     void Update()
     {
         float horizontal;
@@ -37,24 +39,38 @@ public class Movement : MonoBehaviour
 
         Vector3 moveDirection = Vector3.zero;
 
-        // Jump, fall
         if (Player.Instance.controller.isGrounded)
         {
-            verticalVelocity = -2f;
-
             if (Input.GetButtonDown("Jump"))
             {
-                verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * (gravity * 2f));
                 Player.Instance.animator.SetBool("isJumping", true);
+                previousIsGrounded = false;
             }
             else
             {
                 Player.Instance.animator.SetBool("isJumping", false);
+                previousIsGrounded = true;
             }
         }
         else
         {
-            verticalVelocity += gravity * Time.deltaTime;
+            if (previousIsGrounded)
+            {
+                Vector3 rayOrigin = Player.Instance.GetControllerBottom();
+                RaycastHit hit;
+
+                if (Physics.Raycast(rayOrigin, Vector3.down, out hit, 1f))
+                    verticalVelocity = -10f;
+                else
+                    verticalVelocity = -2f;
+            }
+            else
+            {
+                verticalVelocity += gravity * 2 * Time.deltaTime;
+            }
+
+            previousIsGrounded = false;
         }
 
         // Move

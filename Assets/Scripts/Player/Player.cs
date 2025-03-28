@@ -57,7 +57,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
         {
@@ -72,10 +72,24 @@ public class Player : MonoBehaviour
         controller = GetComponent<CharacterController>();
     }
 
-    void Update()
+    private void Update()
     {
         worldPosition = Vector3Int.FloorToInt(transform.position);
         chunkPosition = Utils.WorldPositionToChunkPosition(worldPosition);
+    }
+
+    public void WarpPlayer(Vector3 worldPosition)
+    {
+        controller.enabled = false;
+        controller.transform.position = worldPosition;
+        controller.enabled = true;
+    }
+
+    public Vector3 GetControllerBottom()
+    {
+        Vector3 center = controller.transform.position + controller.center;
+        float bottomY = center.y - (controller.height / 2);
+        return new Vector3(center.x, bottomY, center.z);
     }
 
     public void DisableCameraMouse()
