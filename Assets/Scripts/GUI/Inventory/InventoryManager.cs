@@ -32,27 +32,6 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown("i"))
-        {
-            inventory.SetActive(!inventory.activeSelf);
-
-            if (inventory.activeSelf)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Player.Instance.DisableCameraMouse();
-                Player.Instance.DisableActivity();
-            }
-            else
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Player.Instance.EnableCameraMouse();
-                Player.Instance.EnableActivity();
-            }
-        }
-    }
-
     public void AddItem(Item item)
     {
         bool found = false;

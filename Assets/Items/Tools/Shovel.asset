@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Shovel
   m_EditorClassIdentifier: 
   itemName: Shovel
-  itemID: 102
+  itemID: 101
   itemImage: {fileID: 0}
   stackable: 0
   model: {fileID: 633056988599358560, guid: 3df695de7301387458d86ee825363293, type: 3}

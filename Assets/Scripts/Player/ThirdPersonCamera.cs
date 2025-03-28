@@ -39,9 +39,12 @@ public class ThirdPersonCamera : MonoBehaviour
     private void LateUpdate()
     {
         // Camera zoom
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        distance -= scroll * zoomSpeed;
-        distance = Mathf.Clamp(distance, minDistance, maxDistance);
+        if (active)
+        {
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            distance -= scroll * zoomSpeed;
+            distance = Mathf.Clamp(distance, minDistance, maxDistance);
+        }
 
         // Camera rotation
         smoothPosition = new Vector3(target.position.x, Mathf.Lerp(smoothPosition.y, target.position.y, smoothSpeed * Time.deltaTime), target.position.z);

@@ -78,7 +78,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 1
+  m_Text: 
 --- !u!1 &5730659472653786389
 GameObject:
   m_ObjectHideFlags: 0
@@ -170,7 +170,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   item: {fileID: 0}
   image: {fileID: 888897809470872623}
-  text: {fileID: 2211968448233992752}
+  label: {fileID: 2211968448233992752}
   parentAfterDrag: {fileID: 0}
   active: 0
+  slot: {fileID: 0}
   quantity: 1

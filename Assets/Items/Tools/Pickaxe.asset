@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Pickaxe
   m_EditorClassIdentifier: 
   itemName: Pickaxe
-  itemID: 101
+  itemID: 102
   itemImage: {fileID: 0}
   stackable: 0
   model: {fileID: 633056988599358560, guid: 3c6681c556353374782c793b93a20c49, type: 3}

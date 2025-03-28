@@ -5,7 +5,6 @@ public class CraftManager : MonoBehaviour
 {
     public static CraftManager Instance { get; private set; }
 
-    public GameObject panel;
     public GameObject content;
     public GameObject rowPrefab;
 
@@ -22,29 +21,6 @@ public class CraftManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
-        }
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown("c"))
-        {
-            panel.SetActive(!panel.activeSelf);
-
-            if (panel.activeSelf)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Player.Instance.DisableCameraMouse();
-                Player.Instance.DisableActivity();
-
-                UpdateRows();
-            }
-            else
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Player.Instance.EnableCameraMouse();
-                Player.Instance.EnableActivity();
-            }
         }
     }
 

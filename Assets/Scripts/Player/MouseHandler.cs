@@ -18,12 +18,10 @@ public class MouseHandler : MonoBehaviour
         if (!Input.GetMouseButtonDown(0))
             return;
 
-        InventoryManager inventoryManager = InventoryManager.Instance;
-
-        if (inventoryManager.inventory.activeSelf)
+        if (ContainerManager.Instance.panel.activeSelf)
             return;
 
-        InventoryItem activeItem = inventoryManager.activeItem;
+        InventoryItem activeItem = InventoryManager.Instance.activeItem;
 
         if (activeItem == null) // No item selected
         {
@@ -59,12 +57,7 @@ public class MouseHandler : MonoBehaviour
 
     public void Chop()
     {
-        InventoryManager inventoryManager = InventoryManager.Instance;
-
-        if (inventoryManager.inventory.activeSelf)
-            return;
-
-        InventoryItem activeItem = inventoryManager.activeItem;
+        InventoryItem activeItem = InventoryManager.Instance.activeItem;
 
         byte activeItemID = activeItem.item.itemID;
 

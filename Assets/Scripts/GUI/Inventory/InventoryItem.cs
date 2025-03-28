@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
 {
     public Item item;
 
     public Image image;
-    public Text text;
+    public Text label;
 
     [HideInInspector]
     public Transform parentAfterDrag;
@@ -15,7 +15,7 @@ public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     [HideInInspector]
     public bool active = false;
 
-    private InventorySlot slot;
+    public InventorySlot slot;
 
     public int quantity = 1;
 
@@ -24,6 +24,9 @@ public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         this.item = item;
         image.sprite = item.itemImage;
         slot = transform.GetComponentInParent<InventorySlot>(true);
+
+        if (item.stackable)
+            label.text = quantity.ToString();
     }
 
     public void UpdateQuantity()
@@ -36,7 +39,8 @@ public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         }
         else
         {
-            text.text = quantity.ToString();
+            if (item.stackable)
+                label.text = quantity.ToString();
         }
     }
 
@@ -66,5 +70,15 @@ public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         image.raycastTarget = true;
         transform.SetParent(parentAfterDrag);
         slot = transform.GetComponentInParent<InventorySlot>();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        Tooltip.Instance.Show(item);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        Tooltip.Instance.Hide();
     }
 }

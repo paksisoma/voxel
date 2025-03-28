@@ -45,7 +45,7 @@ public class InventorySlot : MonoBehaviour, IDropHandler, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (eventData.button != PointerEventData.InputButton.Right)
+        if (eventData.button != PointerEventData.InputButton.Left)
             return;
 
         InventoryItem item = transform.GetComponentInChildren<InventoryItem>();
@@ -60,12 +60,19 @@ public class InventorySlot : MonoBehaviour, IDropHandler, IPointerClickHandler
             }
             else
             {
-                if (InventoryManager.Instance.activeItem == null)
+                InventoryItem activeItem = InventoryManager.Instance.activeItem;
+
+                // Deselect already selected item
+                if (activeItem != null)
                 {
-                    item.active = true;
-                    ChangeSprite(true);
-                    InventoryManager.Instance.activeItem = item;
+                    activeItem.active = false;
+                    activeItem.slot.ChangeSprite(false);
                 }
+
+                // Select selected item
+                item.active = true;
+                ChangeSprite(true);
+                InventoryManager.Instance.activeItem = item;
             }
         }
     }
