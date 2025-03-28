@@ -5,14 +5,14 @@ public class HudManager : MonoBehaviour
     public static HudManager Instance { get; private set; }
 
     public RectTransform healthTransform;
-    public RectTransform temperatureTransform;
     public RectTransform hungerTransform;
     public RectTransform thirstTransform;
+    public RectTransform temperatureTransform;
 
-    private float healthMaxHeight;
+    private float healthMaxWidth;
+    private float thirstMaxWidth;
+    private float hungerMaxWidth;
     private float temperatureMaxHeight;
-    private float hungerMaxHeight;
-    private float thirstMaxHeight;
 
     private void Awake()
     {
@@ -26,29 +26,33 @@ public class HudManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        healthMaxHeight = healthTransform.rect.height;
+        healthMaxWidth = healthTransform.rect.width;
+        thirstMaxWidth = thirstTransform.rect.width;
+        hungerMaxWidth = hungerTransform.rect.width;
         temperatureMaxHeight = temperatureTransform.rect.height;
-        hungerMaxHeight = hungerTransform.rect.height;
-        thirstMaxHeight = thirstTransform.rect.height;
     }
 
     public void SetHealth(float percent)
     {
-        healthTransform.anchoredPosition = new Vector2(0, healthMaxHeight * (percent - 1));
-    }
-
-    public void SetTemperature(float percent)
-    {
-        temperatureTransform.anchoredPosition = new Vector2(0, temperatureMaxHeight * (percent - 1));
-    }
-
-    public void SetHunger(float percent)
-    {
-        hungerTransform.anchoredPosition = new Vector2(0, hungerMaxHeight * (percent - 1));
+        float newWidth = healthMaxWidth * (percent - 1);
+        healthTransform.sizeDelta = new Vector2(newWidth, healthTransform.sizeDelta.y);
     }
 
     public void SetThirst(float percent)
     {
-        thirstTransform.anchoredPosition = new Vector2(0, thirstMaxHeight * (percent - 1));
+        float newWidth = thirstMaxWidth * (percent - 1);
+        thirstTransform.sizeDelta = new Vector2(newWidth, thirstTransform.sizeDelta.y);
+    }
+
+    public void SetHunger(float percent)
+    {
+        float newWidth = hungerMaxWidth * (percent - 1);
+        hungerTransform.sizeDelta = new Vector2(newWidth, hungerTransform.sizeDelta.y);
+    }
+
+    public void SetTemperature(float percent)
+    {
+        float newHeight = temperatureMaxHeight * (percent - 1);
+        temperatureTransform.sizeDelta = new Vector2(temperatureTransform.sizeDelta.y, newHeight);
     }
 }
