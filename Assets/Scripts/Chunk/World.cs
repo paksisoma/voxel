@@ -173,6 +173,19 @@ public class World : MonoBehaviour
 
         var jobHandle2 = noiseJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64);
 
+        // Noise map generation
+        NativeArray<float> noiseMap2 = new NativeArray<float>(CHUNK_SIZE * CHUNK_SIZE, Allocator.Persistent);
+
+        NoiseJob noiseJob2 = new NoiseJob
+        {
+            Map = noiseMap2,
+            MapWidth = CHUNK_SIZE,
+            Position = new int2(worldPosition.x + 10000, worldPosition.y + 10000),
+            Frequency = 5,
+        };
+
+        noiseJob2.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64).Complete();
+
         // Noise map generation for tree
         int treeNoiseMapWidth = CHUNK_SIZE_NO_PADDING + (TREE_DENSITY * 2);
         NativeArray<float> treeNoiseMap = new NativeArray<float>(treeNoiseMapWidth * treeNoiseMapWidth, Allocator.Persistent);
@@ -314,7 +327,26 @@ public class World : MonoBehaviour
                     if (terrainMap[j] < WATER_HEIGHT)
                         chunk.AddSolid(x, height - 1, z, 6); // Dirt
                     else
-                        chunk.AddSolid(x, height - 1, z, 5); // Snow
+                    {
+                        if (terrainMap[j] > MOUNTAIN_TRANSITION_END) // Mountain
+                        {
+                            if (noiseMap[j] > 0.05f)
+                            {
+                                chunk.AddSolid(x, height - 1, z, 5);
+                            }
+                            else
+                            {
+                                if (noiseMap2[j] > 0.5f)
+                                    chunk.AddSolid(x, height - 1, z, 7);
+                                else
+                                    chunk.AddSolid(x, height - 1, z, 8);
+                            }
+                        }
+                        else
+                        {
+                            chunk.AddSolid(x, height - 1, z, 5); // Snow
+                        }
+                    }
                 }
                 else // Grass biome
                 {
@@ -326,7 +358,17 @@ public class World : MonoBehaviour
                     {
                         if (terrainMap[j] > MOUNTAIN_TRANSITION_END) // Stone
                         {
-                            chunk.AddSolid(x, height - 1, z, 2);
+                            if (noiseMap[j] > 0.05f)
+                            {
+                                chunk.AddSolid(x, height - 1, z, 2);
+                            }
+                            else
+                            {
+                                if (noiseMap2[j] > 0.5f)
+                                    chunk.AddSolid(x, height - 1, z, 7);
+                                else
+                                    chunk.AddSolid(x, height - 1, z, 8);
+                            }
                         }
                         else // Grass, stone transition
                         {

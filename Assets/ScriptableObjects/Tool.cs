@@ -4,5 +4,7 @@ using UnityEngine;
 public class Tool : Item
 {
     public GameObject model;
-    public int damage;
+    public bool canMine;
+    public bool canDig;
+    public bool canChop;
 }

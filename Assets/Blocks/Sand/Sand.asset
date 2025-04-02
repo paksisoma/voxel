@@ -19,3 +19,6 @@ MonoBehaviour:
   topMaterial: {fileID: 2100000, guid: 4c11d82e46ffe934f9928a60e0083e42, type: 2}
   sideMaterial: {fileID: 2100000, guid: 4c11d82e46ffe934f9928a60e0083e42, type: 2}
   bottomMaterial: {fileID: 2100000, guid: 4c11d82e46ffe934f9928a60e0083e42, type: 2}
+  isMineable: 0
+  isDiggable: 1
+  isChoppable: 0

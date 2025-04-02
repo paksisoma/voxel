@@ -6,7 +6,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using static Blocks;
 using static Constants;
 
 public class Chunk
@@ -153,7 +152,7 @@ public class Chunk
             SolidBlocks = sBlocks,
             WaterBlocks = wBlocks,
             IdBlocks = iBlocks,
-            BlockProperties = Blocks.Instance.blockProperties,
+            BlockProperties = Items.Instance.blockProperties,
             Vertices = vertices,
             Triangles = triangles,
             Uvs = uvs,
@@ -172,7 +171,7 @@ public class Chunk
         Material[] materials = new Material[segment.Length];
 
         for (int i = 0; i < segment.Length; i++)
-            materials[i] = Blocks.Instance.materials[segment[i].materialId];
+            materials[i] = Items.Instance.materials[segment[i].materialId];
 
         mesh.subMeshCount = segment.Length;
         meshRenderer.materials = materials;

@@ -71,7 +71,7 @@ public class InventoryManager : MonoBehaviour
 
     public void AddItem(byte id)
     {
-        if (Items.Instance.TryGetItemByID(id, out Item item))
+        if (Items.Instance.items.TryGetValue(id, out Item item))
             AddItem(item);
     }
 

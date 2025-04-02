@@ -59,43 +59,45 @@ public class MouseHandler : MonoBehaviour
     {
         InventoryItem activeItem = InventoryManager.Instance.activeItem;
 
-        byte activeItemID = activeItem.item.itemID;
-
-        if (activeItemID == 100) // Axe
+        if (activeItem.item is Tool)
         {
-            if (GetHitPointPrefab(out GameObject gameObject))
+            Tool tool = (Tool)activeItem.item;
+
+            if (tool.canMine)
             {
-                if (gameObject.CompareTag("Tree"))
+                if (GetHitPointIn(out Vector3Int worldPosition))
+                {
+                    byte blockID = World.Instance.GetBlock(worldPosition);
+                    Block block = Items.Instance.blocks[blockID];
+
+                    if (block.isMineable)
+                    {
+                        World.Instance.SetBlock(worldPosition, 0);
+                        InventoryManager.Instance.AddItem(blockID);
+                    }
+                }
+            }
+            else if (tool.canDig)
+            {
+                if (GetHitPointIn(out Vector3Int worldPosition))
+                {
+                    byte blockID = World.Instance.GetBlock(worldPosition);
+                    Block block = Items.Instance.blocks[blockID];
+
+                    if (block.isDiggable)
+                    {
+                        World.Instance.SetBlock(worldPosition, 0);
+                        InventoryManager.Instance.AddItem(blockID);
+                    }
+                }
+            }
+            else if (tool.canChop)
+            {
+                if (GetHitPointPrefab(out GameObject gameObject) && gameObject.CompareTag("Tree"))
                 {
                     Tree tree = gameObject.GetComponent<Tree>();
                     tree.TakeDamage(20);
                     tree.ChopTree();
-                }
-            }
-        }
-        else if (activeItemID == 101) // Shovel
-        {
-            if (GetHitPointIn(out Vector3Int worldPosition))
-            {
-                byte blockID = World.Instance.GetBlock(worldPosition);
-
-                if (blockID == 1 || blockID == 4 || blockID == 6)
-                {
-                    World.Instance.SetBlock(worldPosition, 0);
-                    InventoryManager.Instance.AddItem(blockID);
-                }
-            }
-        }
-        else if (activeItemID == 102) // Pickaxe
-        {
-            if (GetHitPointIn(out Vector3Int worldPosition))
-            {
-                byte blockID = World.Instance.GetBlock(worldPosition);
-
-                if (blockID == 2)
-                {
-                    World.Instance.SetBlock(worldPosition, 0);
-                    InventoryManager.Instance.AddItem(blockID);
                 }
             }
         }
