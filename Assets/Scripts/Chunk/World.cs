@@ -159,7 +159,8 @@ public class World : MonoBehaviour
         TerrainJob terrainJob = new TerrainJob
         {
             Map = terrainMap,
-            Position = new int2(worldPosition.x, worldPosition.y),
+            Position1 = new int2(worldPosition.x, worldPosition.y) + Seed.offset1,
+            Position2 = new int2(worldPosition.x, worldPosition.y) + Seed.offset2,
         };
 
         var jobHandle1 = terrainJob.Schedule(CHUNK_SIZE * CHUNK_SIZE, 64);
@@ -171,7 +172,7 @@ public class World : MonoBehaviour
         {
             Map = noiseMap,
             MapWidth = CHUNK_SIZE,
-            Position = new int2(worldPosition.x, worldPosition.y),
+            Position = new int2(worldPosition.x, worldPosition.y) + Seed.offset3,
             Frequency = 5,
         };
 
@@ -184,7 +185,7 @@ public class World : MonoBehaviour
         {
             Map = noiseMap2,
             MapWidth = CHUNK_SIZE,
-            Position = new int2(worldPosition.x + 10000, worldPosition.y + 10000),
+            Position = new int2(worldPosition.x, worldPosition.y) + Seed.offset4,
             Frequency = 5,
         };
 
@@ -198,7 +199,7 @@ public class World : MonoBehaviour
         {
             Map = treeNoiseMap,
             MapWidth = treeNoiseMapWidth,
-            Position = new int2(worldPosition.x, worldPosition.y),
+            Position = new int2(worldPosition.x, worldPosition.y) + Seed.offset5,
             Frequency = 5,
         };
 
@@ -211,7 +212,7 @@ public class World : MonoBehaviour
         {
             Map = forestMap,
             MapWidth = CHUNK_SIZE_NO_PADDING,
-            Position = new int2(worldPosition.x + 10000, worldPosition.y + 10000),
+            Position = new int2(worldPosition.x, worldPosition.y) + Seed.offset2,
             Frequency = 1000,
         };
 
@@ -243,7 +244,7 @@ public class World : MonoBehaviour
         {
             Map = rockNoiseMap,
             MapWidth = rockNoiseMapWidth,
-            Position = new int2(worldPosition.x + 10000, worldPosition.y + 10000),
+            Position = new int2(worldPosition.x, worldPosition.y) + Seed.offset4,
             Frequency = 5,
         };
 
@@ -263,8 +264,6 @@ public class World : MonoBehaviour
 
         rockJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64).Complete();
 
-
-
         // Stick noise generation
         int stickNoiseMapWidth = CHUNK_SIZE_NO_PADDING + (TREE_DENSITY * 2);
         NativeArray<float> stickNoiseMap = new NativeArray<float>(rockNoiseMapWidth * rockNoiseMapWidth, Allocator.Persistent);
@@ -273,7 +272,7 @@ public class World : MonoBehaviour
         {
             Map = stickNoiseMap,
             MapWidth = stickNoiseMapWidth,
-            Position = new int2(worldPosition.x + 15000, worldPosition.y + 15000),
+            Position = new int2(worldPosition.x, worldPosition.y) + Seed.offset3,
             Frequency = 5,
         };
 
@@ -432,76 +431,82 @@ public class World : MonoBehaviour
 
         for (int i = 0; i < treeMap.Length; i++)
         {
-            if (treeMap[i] && forestMap[i] > 0.5f) // Tree
+            if (forestMap[i] > 0.5f)
             {
-                int x = i / CHUNK_SIZE_NO_PADDING;
-                int z = i % CHUNK_SIZE_NO_PADDING;
-
-                int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
-
-                int y = height % CHUNK_SIZE_NO_PADDING;
-
-                // Place tree above water and under mountain
-                if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                if (treeMap[i]) // Tree
                 {
-                    GameObject tree = Instantiate(treeObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
-                    tree.transform.SetParent(treeParent.transform);
-                    tree.isStatic = true;
-                    StaticBatchingUtility.Combine(tree);
-                    prefabs.Add(new Vector3Int(x, y, z), tree);
+                    int x = i / CHUNK_SIZE_NO_PADDING;
+                    int z = i % CHUNK_SIZE_NO_PADDING;
+
+                    int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+                    int y = height % CHUNK_SIZE_NO_PADDING;
+
+                    // Place tree above water and under mountain
+                    if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                    {
+                        GameObject tree = Instantiate(treeObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
+                        tree.transform.SetParent(treeParent.transform);
+                        tree.isStatic = true;
+                        StaticBatchingUtility.Combine(tree);
+                        prefabs.Add(new Vector3Int(x + 1, y, z + 1), tree);
+                    }
                 }
-            }
-            else if (treeMap[i] == false && rockMap[i] && forestMap[i] > 0.5f) // Stone
-            {
-                int x = i / CHUNK_SIZE_NO_PADDING;
-                int z = i % CHUNK_SIZE_NO_PADDING;
-
-                int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
-
-                int y = height % CHUNK_SIZE_NO_PADDING;
-
-                // Place rock above water and under mountain
-                if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                else if (rockMap[i]) // Stone
                 {
-                    GameObject rock = Instantiate(rockObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
-                    rock.transform.SetParent(rockParent.transform);
-                    rock.isStatic = true;
-                    rock.transform.Rotate(0f, (float)rockNoiseMap[i] * 180, 0f, Space.World);
-                    StaticBatchingUtility.Combine(rock);
+                    int x = i / CHUNK_SIZE_NO_PADDING;
+                    int z = i % CHUNK_SIZE_NO_PADDING;
 
-                    prefabs.Add(new Vector3Int(x + 1, y, z + 1), rock);
+                    int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+                    int y = height % CHUNK_SIZE_NO_PADDING;
+
+                    // Place rock above water and under mountain
+                    if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                    {
+                        GameObject rock = Instantiate(rockObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
+                        rock.transform.SetParent(rockParent.transform);
+                        rock.isStatic = true;
+                        rock.transform.Rotate(0f, (float)rockNoiseMap[i] * 180, 0f, Space.World);
+                        StaticBatchingUtility.Combine(rock);
+
+                        prefabs.Add(new Vector3Int(x + 1, y, z + 1), rock);
+                    }
                 }
-            }
-            else if (stickMap[i] && forestMap[i] > 0.5f)
-            {
-                int x = i / CHUNK_SIZE_NO_PADDING;
-                int z = i % CHUNK_SIZE_NO_PADDING;
-
-                int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
-
-                int y = height % CHUNK_SIZE_NO_PADDING;
-
-                // Place stick above water and under mountain
-                if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                else if (stickMap[i])
                 {
-                    GameObject stick = Instantiate(stickObject, new Vector3(worldPosition.x + x, height - 1.45f, worldPosition.y + z), Quaternion.identity);
-                    stick.transform.SetParent(stickParent.transform);
-                    stick.isStatic = true;
-                    stick.transform.Rotate(0f, (float)stickNoiseMap[i] * 180, 0f, Space.World);
-                    StaticBatchingUtility.Combine(stick);
+                    int x = i / CHUNK_SIZE_NO_PADDING;
+                    int z = i % CHUNK_SIZE_NO_PADDING;
 
-                    prefabs.Add(new Vector3Int(x + 1, y, z + 1), stick);
+                    int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+                    int y = height % CHUNK_SIZE_NO_PADDING;
+
+                    // Place stick above water and under mountain
+                    if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                    {
+                        GameObject stick = Instantiate(stickObject, new Vector3(worldPosition.x + x, height - 1.45f, worldPosition.y + z), Quaternion.identity);
+                        stick.transform.SetParent(stickParent.transform);
+                        stick.isStatic = true;
+                        stick.transform.Rotate(0f, (float)stickNoiseMap[i] * 180, 0f, Space.World);
+                        StaticBatchingUtility.Combine(stick);
+
+                        prefabs.Add(new Vector3Int(x + 1, y, z + 1), stick);
+                    }
                 }
             }
         }
 
         terrainMap.Dispose();
         noiseMap.Dispose();
+        noiseMap2.Dispose();
         treeNoiseMap.Dispose();
         treeMap.Dispose();
         forestMap.Dispose();
         rockNoiseMap.Dispose();
         rockMap.Dispose();
+        stickNoiseMap.Dispose();
+        stickMap.Dispose();
 
         Cloud cloud = GenerateCloud(chunkPosition, new Vector3(worldPosition.x, CLOUD_HEIGHT, worldPosition.y) - new Vector3(1.5f, 1.5f, 1.5f));
 
