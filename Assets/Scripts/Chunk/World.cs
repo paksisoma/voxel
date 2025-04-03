@@ -41,6 +41,10 @@ public class World : MonoBehaviour
     public GameObject rockObject;
     public GameObject rockParent;
 
+    [Header("Stick")]
+    public GameObject stickObject;
+    public GameObject stickParent;
+
     [Header("Cloud")]
     public Material cloudMaterial;
     public GameObject cloudParent;
@@ -259,6 +263,38 @@ public class World : MonoBehaviour
 
         rockJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64).Complete();
 
+
+
+        // Stick noise generation
+        int stickNoiseMapWidth = CHUNK_SIZE_NO_PADDING + (TREE_DENSITY * 2);
+        NativeArray<float> stickNoiseMap = new NativeArray<float>(rockNoiseMapWidth * rockNoiseMapWidth, Allocator.Persistent);
+
+        NoiseJob stickNoiseJob = new NoiseJob
+        {
+            Map = stickNoiseMap,
+            MapWidth = stickNoiseMapWidth,
+            Position = new int2(worldPosition.x + 15000, worldPosition.y + 15000),
+            Frequency = 5,
+        };
+
+        stickNoiseJob.Schedule(stickNoiseMapWidth * stickNoiseMapWidth, 64).Complete();
+
+        // Stick map generation
+        NativeArray<bool> stickMap = new NativeArray<bool>(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, Allocator.Persistent);
+
+        PeakJob stickJob = new PeakJob
+        {
+            InputMap = stickNoiseMap,
+            InputMapWidth = stickNoiseMapWidth,
+            OutputMap = stickMap,
+            OutputMapWidth = CHUNK_SIZE_NO_PADDING,
+            Radius = TREE_DENSITY,
+        };
+
+        stickJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64).Complete();
+
+
+
         // Vertical chunks
         Chunk[] verticalChunks = new Chunk[CHUNK_HEIGHT];
 
@@ -434,6 +470,27 @@ public class World : MonoBehaviour
                     StaticBatchingUtility.Combine(rock);
 
                     prefabs.Add(new Vector3Int(x + 1, y, z + 1), rock);
+                }
+            }
+            else if (stickMap[i] && forestMap[i] > 0.5f)
+            {
+                int x = i / CHUNK_SIZE_NO_PADDING;
+                int z = i % CHUNK_SIZE_NO_PADDING;
+
+                int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+                int y = height % CHUNK_SIZE_NO_PADDING;
+
+                // Place stick above water and under mountain
+                if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                {
+                    GameObject stick = Instantiate(stickObject, new Vector3(worldPosition.x + x, height - 1.45f, worldPosition.y + z), Quaternion.identity);
+                    stick.transform.SetParent(stickParent.transform);
+                    stick.isStatic = true;
+                    stick.transform.Rotate(0f, (float)stickNoiseMap[i] * 180, 0f, Space.World);
+                    StaticBatchingUtility.Combine(stick);
+
+                    prefabs.Add(new Vector3Int(x + 1, y, z + 1), stick);
                 }
             }
         }
