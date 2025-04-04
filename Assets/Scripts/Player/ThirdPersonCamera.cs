@@ -58,11 +58,14 @@ public class ThirdPersonCamera : MonoBehaviour
 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0);
         Vector3 desiredPosition = smoothPosition + rotation * new Vector3(0, offset.y, -distance);
+        Vector3Int blockPosition = new Vector3Int((int)desiredPosition.x, (int)desiredPosition.y, (int)desiredPosition.z);
 
-        RaycastHit hit;
-        if (Physics.Raycast(smoothPosition, desiredPosition - smoothPosition, out hit, distance))
+        if (World.Instance.IsValidChunk(Utils.WorldPositionToChunkPosition(blockPosition)) && World.Instance.GetBlock(blockPosition) != 0)
         {
-            desiredPosition = hit.point;
+            RaycastHit hit;
+
+            if (Physics.Raycast(smoothPosition, desiredPosition - smoothPosition, out hit, distance))
+                desiredPosition = hit.point;
         }
 
         transform.position = desiredPosition;
