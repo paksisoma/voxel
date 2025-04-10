@@ -7,6 +7,7 @@ public class Player : MonoBehaviour
     public CharacterController controller { get; private set; }
     public Vector3Int worldPosition { get; private set; }
     public Vector3Int chunkPosition { get; private set; }
+    public Vector3Int groundPosition { get; private set; }
 
     public GameObject rightHandParent;
     public Movement movement;
@@ -19,8 +20,17 @@ public class Player : MonoBehaviour
         get => _health;
         set
         {
-            _health = value;
-            HudManager.Instance.SetHealth(value);
+            if (value <= 0f)
+            {
+                _health = 0f;
+                // TODO: Handle death
+            }
+            else
+            {
+                _health = value;
+            }
+
+            HudManager.Instance.SetHealth(_health);
         }
     }
 
@@ -74,8 +84,9 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        worldPosition = Vector3Int.FloorToInt(transform.position);
+        worldPosition = Vector3Int.RoundToInt(transform.position);
         chunkPosition = Utils.WorldPositionToChunkPosition(worldPosition);
+        groundPosition = World.Instance.TryGetGroundPosition(worldPosition, out Vector3Int position) ? position : groundPosition;
     }
 
     public void WarpPlayer(Vector3 worldPosition)

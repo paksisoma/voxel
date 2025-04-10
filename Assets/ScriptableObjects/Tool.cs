@@ -7,4 +7,5 @@ public class Tool : Item
     public bool canMine;
     public bool canDig;
     public bool canChop;
+    public float damage;
 }

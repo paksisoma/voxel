@@ -445,6 +445,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 69631923}
   m_CullTransparentMesh: 1
+--- !u!1 &107621980
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 107621981}
+  m_Layer: 0
+  m_Name: NPC
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &107621981
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 107621980}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1644947903}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &230474780
 GameObject:
   m_ObjectHideFlags: 0
@@ -1913,6 +1944,8 @@ MonoBehaviour:
   speed: 8
   gravity: -9.81
   jumpHeight: 1.5
+  verticalVelocity: 0
+  additionalVelocity: {x: 0, y: 0, z: 0}
   activity: 1
 --- !u!95 &576098806
 Animator:
@@ -4871,7 +4904,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8024697000192651778, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -7890473882308316713, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4887,19 +4920,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -7383185116288423260, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -4505273661938127021, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -4385443850763898259, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -4283331520770112078, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -3944738839203592265, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4915,15 +4948,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -2452770432729459108, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -1637054852900875114, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -1356944241255443110, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -215483759436335528, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4947,7 +4980,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_IsActive
@@ -4955,11 +4988,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1147027839027649750, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 2376791256923785790, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4855183769662234278, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4975,7 +5008,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7036213049465896255, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7163679048263965120, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4991,7 +5024,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7368002659860420144, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 8879528566716807029, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4999,7 +5032,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9189165361352838811, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6776,6 +6809,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1644947903}
   - component: {fileID: 1644947902}
+  - component: {fileID: 1644947904}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -6795,6 +6829,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1bf968b6508b2244b5f64fa6829e22f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  random:
+    state: 0
   chunkParent: {fileID: 230474780}
   treeObject: {fileID: 5330539537610832871, guid: 8f80670192733ee49b6dfe681d4f38d5, type: 3}
   treeParent: {fileID: 542081720}
@@ -6804,6 +6840,9 @@ MonoBehaviour:
   stickParent: {fileID: 1932276511}
   cloudMaterial: {fileID: 2100000, guid: 42c8c410730f94842b0390273ec887bb, type: 2}
   cloudParent: {fileID: 439842122}
+  npcParent: {fileID: 107621980}
+  predator: {fileID: 7482556877044652777, guid: 667046041470864478cd216c11765097, type: 3}
+  prey: {fileID: 7482556877044652777, guid: 6aaf51f600ce51746b68cb7b46f89d6f, type: 3}
 --- !u!4 &1644947903
 Transform:
   m_ObjectHideFlags: 0
@@ -6822,8 +6861,21 @@ Transform:
   - {fileID: 439842123}
   - {fileID: 491188893}
   - {fileID: 1932276512}
+  - {fileID: 107621981}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1644947904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644947901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0767da7a494a48e4ebe207759cb2005f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1677206738
 GameObject:
   m_ObjectHideFlags: 0

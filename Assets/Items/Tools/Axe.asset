@@ -20,3 +20,4 @@ MonoBehaviour:
   canMine: 0
   canDig: 0
   canChop: 1
+  damage: 0.1

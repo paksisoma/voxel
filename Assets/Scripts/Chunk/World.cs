@@ -12,6 +12,13 @@ public class World : MonoBehaviour
 {
     public static World Instance { get; private set; }
 
+    /*public int leftBorder { get; private set; }
+    public int rightBorder { get; private set; }
+    public int topBorder { get; private set; }
+    public int bottomBorder { get; private set; }*/
+
+    public Unity.Mathematics.Random random;
+
     private Dictionary<Vector2Int, ChunkData> chunks;
     private List<Vector2Int> chunkQueue;
 
@@ -49,6 +56,11 @@ public class World : MonoBehaviour
     public Material cloudMaterial;
     public GameObject cloudParent;
 
+    [Header("NPC")]
+    public GameObject npcParent;
+    public GameObject predator;
+    public GameObject prey;
+
     private void Awake()
     {
         if (Instance == null)
@@ -64,6 +76,8 @@ public class World : MonoBehaviour
         chunks = new Dictionary<Vector2Int, ChunkData>();
         chunkQueue = new List<Vector2Int>();
         renderDistance = RENDER_DISTANCE;
+
+        random = new Unity.Mathematics.Random((uint)System.DateTime.Now.Ticks);
     }
 
     private void Update()
@@ -72,6 +86,12 @@ public class World : MonoBehaviour
             return;
 
         Vector3Int playerChunk = Player.Instance.chunkPosition;
+
+        // Borders
+        /*leftBorder = -renderDistance * CHUNK_SIZE_NO_PADDING + (playerChunk.x * CHUNK_SIZE_NO_PADDING);
+        rightBorder = renderDistance * CHUNK_SIZE_NO_PADDING + CHUNK_SIZE_NO_PADDING + (playerChunk.x * CHUNK_SIZE_NO_PADDING) - 1;
+        bottomBorder = -renderDistance * CHUNK_SIZE_NO_PADDING + (playerChunk.z * CHUNK_SIZE_NO_PADDING);
+        topBorder = renderDistance * CHUNK_SIZE_NO_PADDING + CHUNK_SIZE_NO_PADDING + (playerChunk.z * CHUNK_SIZE_NO_PADDING) - 1;*/
 
         // Generate near chunk if not exists
         for (int x = -renderDistance; x <= renderDistance; x++)
@@ -292,8 +312,6 @@ public class World : MonoBehaviour
 
         stickJob.Schedule(CHUNK_SIZE_NO_PADDING * CHUNK_SIZE_NO_PADDING, 64).Complete();
 
-
-
         // Vertical chunks
         Chunk[] verticalChunks = new Chunk[CHUNK_HEIGHT];
 
@@ -497,6 +515,38 @@ public class World : MonoBehaviour
             }
         }
 
+        // Spawn predator
+        bool spawnPredator = random.NextFloat(0f, 1f) <= PREDATOR_SPAWN_RATE;
+
+        if (spawnPredator)
+        {
+            int x = random.NextInt(0, CHUNK_SIZE_NO_PADDING);
+            int z = random.NextInt(0, CHUNK_SIZE_NO_PADDING);
+            int y = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+            if (y > WATER_HEIGHT)
+            {
+                GameObject npc = Instantiate(predator, new Vector3(worldPosition.x + x, y - 1, worldPosition.y + z), Quaternion.identity);
+                npc.transform.SetParent(npcParent.transform);
+            }
+        }
+
+        // Spawn prey
+        bool spawnPrey = random.NextFloat(0f, 1f) <= PREY_SPAWN_RATE;
+
+        if (spawnPrey)
+        {
+            int x = random.NextInt(0, CHUNK_SIZE_NO_PADDING);
+            int z = random.NextInt(0, CHUNK_SIZE_NO_PADDING);
+            int y = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
+
+            if (y > WATER_HEIGHT)
+            {
+                GameObject npc = Instantiate(prey, new Vector3(worldPosition.x + x, y - 1, worldPosition.y + z), Quaternion.identity);
+                npc.transform.SetParent(npcParent.transform);
+            }
+        }
+
         terrainMap.Dispose();
         noiseMap.Dispose();
         noiseMap2.Dispose();
@@ -605,21 +655,30 @@ public class World : MonoBehaviour
             return false;
     }
 
-    public int GetGroundPosition(Vector3Int worldPosition)
+    public bool TryGetGroundPosition(Vector3Int worldPosition, out Vector3Int groundPosition)
     {
+        groundPosition = default;
+
         Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
         Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
 
         Chunk chunk = GetChunk(chunkPosition);
 
-        return chunk.GetGroundPosition(relativePosition) + (chunkPosition.y * CHUNK_SIZE_NO_PADDING);
+        if (chunk != null)
+        {
+            int ground = chunk.GetGroundPosition(relativePosition) + (chunkPosition.y * CHUNK_SIZE_NO_PADDING);
+            groundPosition = new Vector3Int(worldPosition.x, ground, worldPosition.z);
+            return true;
+        }
+
+        return false;
     }
 
     public bool IsGround(Vector3Int position)
     {
         Vector3Int down = position + Vector3Int.down;
 
-        return GetBlock(position) == 0 && GetBlock(down) != 0;
+        return IsValidChunk(WorldPositionToChunkPosition(position)) && GetBlock(position) == 0 && GetBlock(down) != 0 && (GetPrefab(position) == null || !GetPrefab(position).CompareTag("Tree"));
     }
 
     public GameObject GetPrefab(Vector3Int worldPosition)
@@ -684,15 +743,15 @@ public class World : MonoBehaviour
         }
     }
 
-    public List<Vector3Int> Pathfinding(Vector3Int startPosition, Vector3Int endPosition)
+    public bool TryPathfinding(Vector3Int startPosition, Vector3Int endPosition, out List<Vector3Int> path)
     {
-        if (!IsGround(startPosition) || !IsValidChunk(WorldPositionToChunkPosition(startPosition)))
-            throw new System.InvalidOperationException("Invalid start position.");
+        path = new List<Vector3Int>();
 
-        if (!IsGround(endPosition) || !IsValidChunk(WorldPositionToChunkPosition(startPosition)))
-            throw new System.InvalidOperationException("Invalid goal position.");
+        if (!IsValidChunk(WorldPositionToChunkPosition(startPosition)) || !IsGround(startPosition))
+            return false;
 
-        List<Vector3Int> path = new List<Vector3Int>();
+        if (!IsValidChunk(WorldPositionToChunkPosition(startPosition)) || !IsGround(endPosition))
+            return false;
 
         Node startNode = new Node
         {
@@ -772,7 +831,7 @@ public class World : MonoBehaviour
 
         path.Reverse();
 
-        return path;
+        return true;
     }
 
     public struct ChunkData

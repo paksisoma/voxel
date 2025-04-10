@@ -10,6 +10,7 @@ public class Movement : MonoBehaviour
     public float jumpHeight = 1.5f;
 
     private float verticalVelocity;
+    private Vector3 additionalVelocity = Vector3.zero;
 
     private float turnSmoothTime = 0.1f;
     private float turnSmoothVelocity;
@@ -19,7 +20,9 @@ public class Movement : MonoBehaviour
 
     private bool previousIsGrounded = false;
 
-    void Update()
+    private float additionalVelocityTimer = 0f;
+
+    private void Update()
     {
         float horizontal;
         float vertical;
@@ -73,6 +76,21 @@ public class Movement : MonoBehaviour
             previousIsGrounded = false;
         }
 
+        // Additional velocity
+        if (additionalVelocity == Vector3.zero)
+        {
+            additionalVelocityTimer = 0f;
+        }
+        else
+        {
+            float x = Mathf.Lerp(additionalVelocity.x, 0, additionalVelocityTimer);
+            float z = Mathf.Lerp(additionalVelocity.z, 0, additionalVelocityTimer);
+
+            additionalVelocityTimer += 0.05f * Time.deltaTime;
+            additionalVelocity = new Vector3(x, 0, z);
+            previousIsGrounded = false;
+        }
+
         // Move
         if (direction.magnitude >= 0.1f)
         {
@@ -89,7 +107,17 @@ public class Movement : MonoBehaviour
             Player.Instance.animator.SetBool("isRunning", false);
         }
 
-        Vector3 velocity = (moveDirection.normalized * speed + Vector3.up * verticalVelocity) * Time.deltaTime;
+        Vector3 velocity = (moveDirection.normalized * speed + Vector3.up * verticalVelocity + additionalVelocity) * Time.deltaTime;
         Player.Instance.controller.Move(velocity);
+    }
+
+    public void AttackEffect(Vector3 attackerPosition)
+    {
+        Player.Instance.movement.additionalVelocity = (transform.position - attackerPosition).normalized * 10f;
+
+        if (Player.Instance.controller.isGrounded)
+            Player.Instance.movement.verticalVelocity = Mathf.Sqrt(-2f * (gravity * 2f));
+
+        previousIsGrounded = false;
     }
 }

@@ -71,41 +71,50 @@ public class MouseHandler : MonoBehaviour
         {
             Tool tool = (Tool)activeItem.item;
 
-            if (tool.canMine)
+            if (GetHitPointPrefab(out GameObject npcGameObject) && npcGameObject.CompareTag("NPC")) // NPC
             {
-                if (GetHitPointIn(out Vector3Int worldPosition))
+                NPC npc = npcGameObject.GetComponent<NPC>();
+                npc.AttackEffect(Player.Instance.transform.position);
+                npc.health -= tool.damage;
+            }
+            else // Block
+            {
+                if (tool.canMine)
                 {
-                    byte blockID = World.Instance.GetBlock(worldPosition);
-                    Block block = Items.Instance.blocks[blockID];
-
-                    if (block.isMineable)
+                    if (GetHitPointIn(out Vector3Int worldPosition))
                     {
-                        World.Instance.SetBlock(worldPosition, 0);
-                        InventoryManager.Instance.AddItem(blockID);
+                        byte blockID = World.Instance.GetBlock(worldPosition);
+                        Block block = Items.Instance.blocks[blockID];
+
+                        if (block.isMineable)
+                        {
+                            World.Instance.SetBlock(worldPosition, 0);
+                            InventoryManager.Instance.AddItem(blockID);
+                        }
                     }
                 }
-            }
-            else if (tool.canDig)
-            {
-                if (GetHitPointIn(out Vector3Int worldPosition))
+                else if (tool.canDig)
                 {
-                    byte blockID = World.Instance.GetBlock(worldPosition);
-                    Block block = Items.Instance.blocks[blockID];
-
-                    if (block.isDiggable)
+                    if (GetHitPointIn(out Vector3Int worldPosition))
                     {
-                        World.Instance.SetBlock(worldPosition, 0);
-                        InventoryManager.Instance.AddItem(blockID);
+                        byte blockID = World.Instance.GetBlock(worldPosition);
+                        Block block = Items.Instance.blocks[blockID];
+
+                        if (block.isDiggable)
+                        {
+                            World.Instance.SetBlock(worldPosition, 0);
+                            InventoryManager.Instance.AddItem(blockID);
+                        }
                     }
                 }
-            }
-            else if (tool.canChop)
-            {
-                if (GetHitPointPrefab(out GameObject gameObject) && gameObject.CompareTag("Tree"))
+                else if (tool.canChop)
                 {
-                    Tree tree = gameObject.GetComponent<Tree>();
-                    tree.TakeDamage(20);
-                    tree.ChopTree();
+                    if (GetHitPointPrefab(out GameObject gameObject) && gameObject.CompareTag("Tree"))
+                    {
+                        Tree tree = gameObject.GetComponent<Tree>();
+                        tree.TakeDamage(20);
+                        tree.ChopTree();
+                    }
                 }
             }
         }
