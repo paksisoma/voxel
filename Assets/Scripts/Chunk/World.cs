@@ -37,6 +37,8 @@ public class World : MonoBehaviour
         }
     }
 
+    public Storage storage;
+
     [Header("Chunk")]
     public GameObject chunkParent;
 
@@ -78,6 +80,8 @@ public class World : MonoBehaviour
         renderDistance = RENDER_DISTANCE;
 
         random = new Unity.Mathematics.Random((uint)System.DateTime.Now.Ticks);
+
+        storage = new Storage("TestMap");
     }
 
     private void Update()
@@ -108,22 +112,11 @@ public class World : MonoBehaviour
         // Remove far chunks
         List<Vector2Int> keysToRemove = new List<Vector2Int>();
 
-        foreach ((Vector2Int chunkPosition, ChunkData verticalChunks) in chunks)
+        foreach ((Vector2Int chunkPosition, _) in chunks)
         {
             if (chunkPosition.x > playerChunk.x + renderDistance || chunkPosition.x < playerChunk.x - renderDistance || chunkPosition.y > playerChunk.z + renderDistance || chunkPosition.y < playerChunk.z - renderDistance)
             {
-                // Destroy vertical chunks
-                for (int i = 0; i < verticalChunks.chunks.Length; i++)
-                    if (verticalChunks.chunks[i] != null)
-                        Destroy(verticalChunks.chunks[i].mesh);
-
-                // Destroy prefabs
-                foreach (GameObject prefab in verticalChunks.prefabs.Values)
-                    Destroy(prefab);
-
-                // Destroy cloud
-                Destroy(verticalChunks.cloud.mesh);
-
+                DestroyVerticalChunk(chunkPosition);
                 keysToRemove.Add(chunkPosition);
             }
         }
@@ -136,6 +129,38 @@ public class World : MonoBehaviour
 
         chunkQueue = chunkQueue.OrderBy(chunk => Vector2Int.Distance(chunk, new Vector2Int(playerChunk.x, playerChunk.z))).ToList();
         _ = RenderChunks();
+    }
+
+    private void OnApplicationQuit()
+    {
+        foreach ((Vector2Int chunkPosition, _) in chunks)
+            DestroyVerticalChunk(chunkPosition);
+    }
+
+    // It doesn't remove the chunk from the dictionary, only destroy the chunks
+    private void DestroyVerticalChunk(Vector2Int chunkPosition)
+    {
+        ChunkData verticalChunk = chunks[chunkPosition];
+
+        // Destroy vertical chunks
+        for (int i = 0; i < verticalChunk.chunks.Length; i++)
+            if (verticalChunk.chunks[i] != null)
+            {
+                Destroy(verticalChunk.chunks[i].mesh);
+
+                // Save chunk changes
+                List<StorageBlockData> changes = verticalChunk.chunks[i].changes;
+
+                if (changes.Count > 0)
+                    storage.SaveChunk(new Vector3Int(chunkPosition.x, i, chunkPosition.y), changes);
+            }
+
+        // Destroy prefabs
+        foreach (GameObject prefab in verticalChunk.prefabs.Values)
+            Destroy(prefab);
+
+        // Destroy cloud
+        Destroy(verticalChunk.cloud.mesh);
     }
 
     async UniTask RenderChunks()
@@ -440,7 +465,7 @@ public class World : MonoBehaviour
                 }
             }
 
-            chunk.UpdateMesh();
+            //chunk.UpdateMesh();
             verticalChunks[i] = chunk;
         }
 
@@ -512,6 +537,34 @@ public class World : MonoBehaviour
                         prefabs.Add(new Vector3Int(x + 1, y, z + 1), stick);
                     }
                 }
+            }
+        }
+
+        // Load saved changes
+        for (int i = 0; i < verticalChunks.Length; i++)
+        {
+            Chunk chunk = verticalChunks[i];
+
+            if (chunk != null)
+            {
+                Vector3Int currentChunkPosition = new Vector3Int(chunkPosition.x, i, chunkPosition.y);
+
+                List<StorageBlockData> blocks = storage.GetBlocks(currentChunkPosition);
+
+                if (blocks != null)
+                    foreach (StorageBlockData block in blocks)
+                    {
+                        chunk.SetBlock(block.position.x, block.position.y, block.position.z, block.type);
+                        Vector3Int blockPosition = new Vector3Int(block.position.x, block.position.y, block.position.z);
+
+                        if (prefabs.TryGetValue(blockPosition, out GameObject prefab))
+                        {
+                            Destroy(prefab);
+                            prefabs.Remove(blockPosition);
+                        }
+                    }
+
+                chunk.UpdateMesh();
             }
         }
 
@@ -596,7 +649,7 @@ public class World : MonoBehaviour
         Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
 
         Chunk chunk = GetChunk(chunkPosition);
-        chunk.SetBlock(relativePosition, id);
+        chunk.SetAndSaveBlock((byte)relativePosition.x, (byte)relativePosition.y, (byte)relativePosition.z, id);
         chunk.UpdateMesh();
 
         void UpdateNeighbourBlock(Vector3Int chunkPosition, Vector3Int relativePosition, byte id, int axis)
@@ -620,7 +673,7 @@ public class World : MonoBehaviour
             }
 
             Chunk neighbourChunk = GetChunk(neighbourChunkPosition);
-            neighbourChunk.SetBlock(neighbourRelativePosition, id);
+            neighbourChunk.SetAndSaveBlock((byte)neighbourRelativePosition.x, (byte)neighbourRelativePosition.y, (byte)neighbourRelativePosition.z, id);
             neighbourChunk.UpdateMesh();
         }
 

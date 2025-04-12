@@ -37,8 +37,8 @@ public class Tree : MonoBehaviour
         if (health <= 0)
         {
             Destroy(gameObject);
-            ProgressBar.Instance.CloseProgress();
-            return;
+            Vector3Int worldPosition = Vector3Int.FloorToInt(transform.position) + new Vector3Int(0, 1, 0);
+            World.Instance.SetBlock(worldPosition, 0);
         }
     }
 

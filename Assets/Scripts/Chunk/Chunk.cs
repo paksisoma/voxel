@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
@@ -19,6 +20,8 @@ public class Chunk
     public MeshFilter meshFilter { get; }
     public MeshRenderer meshRenderer { get; }
     public MeshCollider meshCollider { get; }
+
+    public List<StorageBlockData> changes = new List<StorageBlockData>();
 
     public Chunk(GameObject gameObject, Mesh mesh, MeshFilter meshFilter, MeshRenderer meshRenderer, MeshCollider meshCollider)
     {
@@ -110,6 +113,13 @@ public class Chunk
     public void SetBlock(Vector3Int position, byte id)
     {
         SetBlock(position.x, position.y, position.z, id);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetAndSaveBlock(byte x, byte y, byte z, byte id)
+    {
+        SetBlock(x, y, z, id);
+        changes.Add(new StorageBlockData(new Vector3Byte(x, y, z), id));
     }
 
     public byte GetBlock(int x, int y, int z)

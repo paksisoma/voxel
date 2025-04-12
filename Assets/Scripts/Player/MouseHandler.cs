@@ -34,11 +34,13 @@ public class MouseHandler : MonoBehaviour
                     if (prefab.CompareTag("Rock"))
                     {
                         Destroy(prefab);
+                        World.Instance.SetBlock(worldPosition, 0);
                         InventoryManager.Instance.AddItem(103);
                     }
                     else if (prefab.CompareTag("Stick"))
                     {
                         Destroy(prefab);
+                        World.Instance.SetBlock(worldPosition, 0);
                         InventoryManager.Instance.AddItem(104);
                     }
                 }
