@@ -37,8 +37,6 @@ public class World : MonoBehaviour
         }
     }
 
-    public Storage storage;
-
     [Header("Chunk")]
     public GameObject chunkParent;
 
@@ -63,6 +61,10 @@ public class World : MonoBehaviour
     public GameObject predator;
     public GameObject prey;
 
+    private StorageWorld storageWorld;
+    private StorageCharacter storageCharacter;
+    private bool initPlayer = false;
+
     private void Awake()
     {
         if (Instance == null)
@@ -81,7 +83,7 @@ public class World : MonoBehaviour
 
         random = new Unity.Mathematics.Random((uint)System.DateTime.Now.Ticks);
 
-        storage = new Storage("TestMap");
+        LoadWorld();
     }
 
     private void Update()
@@ -135,6 +137,32 @@ public class World : MonoBehaviour
     {
         foreach ((Vector2Int chunkPosition, _) in chunks)
             DestroyVerticalChunk(chunkPosition);
+
+        SaveWorld();
+        SaveCharacter();
+    }
+
+    private void SaveWorld()
+    {
+        Storage.SetWorld(storageWorld);
+    }
+
+    private void LoadWorld()
+    {
+        storageWorld = Storage.GetWorld();
+        Seed.seed = storageWorld.seed;
+    }
+
+    private void SaveCharacter()
+    {
+        storageCharacter.health = Player.Instance.health;
+        storageCharacter.thirst = Player.Instance.thirst;
+        storageCharacter.hunger = Player.Instance.hunger;
+        storageCharacter.temperature = Player.Instance.temperature;
+        storageCharacter.position = Player.Instance.transform.position;
+        storageCharacter.rotation = Player.Instance.transform.eulerAngles.y;
+
+        Storage.SetCharacter(storageCharacter);
     }
 
     // It doesn't remove the chunk from the dictionary, only destroy the chunks
@@ -152,7 +180,7 @@ public class World : MonoBehaviour
                 List<StorageBlockData> changes = verticalChunk.chunks[i].changes;
 
                 if (changes.Count > 0)
-                    storage.SaveChunk(new Vector3Int(chunkPosition.x, i, chunkPosition.y), changes);
+                    Storage.SaveChunk(new Vector3Int(chunkPosition.x, i, chunkPosition.y), changes);
             }
 
         // Destroy prefabs
@@ -163,7 +191,7 @@ public class World : MonoBehaviour
         Destroy(verticalChunk.cloud.mesh);
     }
 
-    async UniTask RenderChunks()
+    private async UniTask RenderChunks()
     {
         render = true;
 
@@ -174,6 +202,27 @@ public class World : MonoBehaviour
                 GenerateChunk(chunkPosition);
                 await UniTask.Yield();
             }
+        }
+
+        // Load player after chunk generation
+        if (!initPlayer)
+        {
+            storageCharacter = Storage.GetCharacter();
+
+            Player.Instance.health = storageCharacter.health;
+            Player.Instance.thirst = storageCharacter.thirst;
+            Player.Instance.hunger = storageCharacter.hunger;
+            Player.Instance.temperature = storageCharacter.temperature;
+            Player.Instance.transform.rotation = Quaternion.Euler(0, storageCharacter.rotation, 0);
+
+            if (storageWorld.visit > 0)
+                Player.Instance.WarpPlayer(storageCharacter.position);
+            else
+                Player.Instance.WarpPlayerUp(Vector2.zero);
+
+            storageWorld.visit++;
+
+            initPlayer = true;
         }
 
         render = false;
@@ -549,7 +598,7 @@ public class World : MonoBehaviour
             {
                 Vector3Int currentChunkPosition = new Vector3Int(chunkPosition.x, i, chunkPosition.y);
 
-                List<StorageBlockData> blocks = storage.GetBlocks(currentChunkPosition);
+                List<StorageBlockData> blocks = Storage.GetBlocks(currentChunkPosition);
 
                 if (blocks != null)
                     foreach (StorageBlockData block in blocks)

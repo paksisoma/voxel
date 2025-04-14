@@ -96,6 +96,12 @@ public class Player : MonoBehaviour
         controller.enabled = true;
     }
 
+    public void WarpPlayerUp(Vector2 worldPosition)
+    {
+        if (Physics.Raycast(new Vector3(worldPosition.x, 500, worldPosition.y), Vector3.down, out RaycastHit hit, 500))
+            WarpPlayer(hit.point + Vector3.up * 2f);
+    }
+
     public Vector3 GetControllerBottom()
     {
         Vector3 center = controller.transform.position + controller.center;

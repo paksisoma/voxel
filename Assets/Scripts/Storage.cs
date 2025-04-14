@@ -1,45 +1,27 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using static Constants;
 
-public class Storage
+public static class Storage
 {
-    public Dictionary<Vector3Int, (int, int)> chunkSeek; // Chunk position, start, length
+    public static Dictionary<Vector3Int, (int, int)> chunkSeek; // Chunk position, start, length
 
-    private string indexPath;
-    private string blocksPath;
-    private string mapPath;
-    private string characterPath;
+    private static string worldPath;
+    private static string indexPath;
+    private static string blocksPath;
+    private static string characterPath;
 
     private const int blockDataBytes = 4;
 
-    public Storage(string mapName)
+    public static void LoadMap(string mapName)
     {
-        string path = Application.dataPath;
+        string path = Application.dataPath + "/Save/" + mapName + "/";
 
-        // Save folder
-        path += "/Save/";
-        CreateDirectoryIfNotExists(path);
-
-        // Map folder
-        path += "/" + mapName + "/";
-        CreateDirectoryIfNotExists(path);
-
-        // Index table file
+        worldPath = path + "/world_00.bin";
         indexPath = path + "/world_01.bin";
-        CreateFileIfNotExists(indexPath);
-
-        // Block file
         blocksPath = path + "/world_02.bin";
-        CreateFileIfNotExists(blocksPath);
-
-        // Map file
-        mapPath = path + "/map.bin";
-        CreateFileIfNotExists(mapPath);
-
-        // Character file
         characterPath = path + "/character.bin";
-        CreateFileIfNotExists(characterPath);
 
         // Load index table
         chunkSeek = new Dictionary<Vector3Int, (int, int)>();
@@ -59,19 +41,40 @@ public class Storage
         }
     }
 
-    private void CreateDirectoryIfNotExists(string path)
+    public static void CreateMap(string mapName, uint seed)
     {
+        string path = Application.dataPath;
+
+        // Save folder
+        path += "/Save/";
         if (!Directory.Exists(path))
             Directory.CreateDirectory(path);
+
+        // Map folder
+        path += "/" + mapName + "/";
+        Directory.CreateDirectory(path);
+
+        // World main file
+        worldPath = path + "/world_00.bin";
+        File.Create(worldPath).Close();
+
+        // Index table file
+        indexPath = path + "/world_01.bin";
+        File.Create(indexPath).Close();
+
+        // Block file
+        blocksPath = path + "/world_02.bin";
+        File.Create(blocksPath).Close();
+
+        // Character file
+        characterPath = path + "/character.bin";
+        File.Create(characterPath).Close();
+
+        SetWorld(new StorageWorld(Application.version, Application.unityVersion, seed, 0)); // Init map data
+        SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, new List<StorageInventory>())); // Init character data
     }
 
-    private void CreateFileIfNotExists(string path)
-    {
-        if (!File.Exists(path))
-            File.Create(path).Close();
-    }
-
-    public void SaveChunk(Vector3Int chunkPosition, List<StorageBlockData> blocks)
+    public static void SaveChunk(Vector3Int chunkPosition, List<StorageBlockData> blocks)
     {
         bool chunkContains = chunkSeek.ContainsKey(chunkPosition);
 
@@ -87,7 +90,7 @@ public class Storage
         }
     }
 
-    public void AppendBlocks(List<StorageBlockData> blocks, out int startPosition)
+    public static void AppendBlocks(List<StorageBlockData> blocks, out int startPosition)
     {
         using (BinaryWriter writer = new BinaryWriter(File.Open(blocksPath, FileMode.Append)))
         {
@@ -108,7 +111,7 @@ public class Storage
         }
     }
 
-    public void AppendIndex(Vector3Int chunkPosition, int start, int length)
+    public static void AppendIndex(Vector3Int chunkPosition, int start, int length)
     {
         using (BinaryWriter writer = new BinaryWriter(File.Open(indexPath, FileMode.Append)))
         {
@@ -123,7 +126,7 @@ public class Storage
         chunkSeek.Add(chunkPosition, (start, length)); // Add to chunkSeek dictionary
     }
 
-    public void LinkChunk(Vector3Int chunkPosition, int newStart, int newLength)
+    public static void LinkChunk(Vector3Int chunkPosition, int newStart, int newLength)
     {
         int start = chunkSeek[chunkPosition].Item1; // Start
         int length = chunkSeek[chunkPosition].Item2; // Length
@@ -154,7 +157,7 @@ public class Storage
         }
     }
 
-    public List<StorageBlockData> GetBlocks(Vector3Int chunkPosition)
+    public static List<StorageBlockData> GetBlocks(Vector3Int chunkPosition)
     {
         List<StorageBlockData> blocks = new List<StorageBlockData>();
 
@@ -170,7 +173,7 @@ public class Storage
         return blocks;
     }
 
-    private List<StorageBlockData> ReadBlocks(int start, int length, out int nextStart, out int nextLength)
+    private static List<StorageBlockData> ReadBlocks(int start, int length, out int nextStart, out int nextLength)
     {
         List<StorageBlockData> blocks = new List<StorageBlockData>();
 
@@ -196,7 +199,7 @@ public class Storage
         return blocks;
     }
 
-    public void SetCharacter(StorageCharacter character)
+    public static void SetCharacter(StorageCharacter character)
     {
         using (BinaryWriter writer = new BinaryWriter(File.Open(characterPath, FileMode.Create)))
         {
@@ -204,9 +207,10 @@ public class Storage
             writer.Write(character.thirst); // Thirst
             writer.Write(character.hunger); // Hunger
             writer.Write(character.temperature); // Temperature
-            writer.Write(character.x); // X position
-            writer.Write(character.y); // Y position
-            writer.Write(character.z); // Z position
+            writer.Write(character.position.x); // X position
+            writer.Write(character.position.y); // Y position
+            writer.Write(character.position.z); // Z position
+            writer.Write(character.rotation); // Rotation
 
             // Inventory
             foreach (StorageInventory item in character.inventory)
@@ -218,7 +222,7 @@ public class Storage
         }
     }
 
-    public StorageCharacter GetCharacter()
+    public static StorageCharacter GetCharacter()
     {
         using (BinaryReader reader = new BinaryReader(File.Open(characterPath, FileMode.Open)))
         {
@@ -229,6 +233,7 @@ public class Storage
             float x = reader.ReadSingle(); // X position
             float y = reader.ReadSingle(); // Y position
             float z = reader.ReadSingle(); // Z position
+            float rotation = reader.ReadSingle(); // Rotation
 
             List<StorageInventory> inventory = new List<StorageInventory>();
 
@@ -241,29 +246,31 @@ public class Storage
                 inventory.Add(new StorageInventory(index, type, quantity)); // Add item to inventory
             }
 
-            return new StorageCharacter(health, thirst, hunger, temperature, x, y, z, inventory); // Return character data
+            return new StorageCharacter(health, thirst, hunger, temperature, new Vector3(x, y, z), rotation, inventory); // Return character data
         }
     }
 
-    public void SetMap(StorageMap map)
+    public static void SetWorld(StorageWorld map)
     {
-        using (BinaryWriter writer = new BinaryWriter(File.Open(mapPath, FileMode.Create)))
+        using (BinaryWriter writer = new BinaryWriter(File.Open(worldPath, FileMode.Create)))
         {
             writer.Write(map.unityVersion); // Unity version
             writer.Write(map.version); // Version
             writer.Write(map.seed); // Seed
+            writer.Write(map.visit); // Visit
         }
     }
 
-    public StorageMap GetMap()
+    public static StorageWorld GetWorld()
     {
-        using (BinaryReader reader = new BinaryReader(File.Open(mapPath, FileMode.Open)))
+        using (BinaryReader reader = new BinaryReader(File.Open(worldPath, FileMode.Open)))
         {
             string unityVersion = reader.ReadString(); // Unity version
             string version = reader.ReadString(); // Version
-            int seed = reader.ReadInt32(); // Seed
+            uint seed = reader.ReadUInt32(); // Seed
+            uint visit = reader.ReadUInt32(); // Visit
 
-            return new StorageMap(unityVersion, version, seed); // Return map data
+            return new StorageWorld(unityVersion, version, seed, visit); // Return map data
         }
     }
 }
@@ -300,35 +307,35 @@ public struct StorageCharacter
     public float thirst;
     public float hunger;
     public float temperature;
-    public float x;
-    public float y;
-    public float z;
+    public Vector3 position;
+    public float rotation;
     public List<StorageInventory> inventory;
 
-    public StorageCharacter(float health, float thirst, float hunger, float temperature, float x, float y, float z, List<StorageInventory> inventory)
+    public StorageCharacter(float health, float thirst, float hunger, float temperature, Vector3 position, float rotation, List<StorageInventory> inventory)
     {
         this.health = health;
         this.thirst = thirst;
         this.hunger = hunger;
         this.temperature = temperature;
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        this.position = position;
+        this.rotation = rotation;
         this.inventory = inventory;
     }
 }
 
-public struct StorageMap
+public struct StorageWorld
 {
     public string version;
     public string unityVersion;
-    public int seed;
+    public uint seed;
+    public uint visit;
 
-    public StorageMap(string version, string unityVersion, int seed)
+    public StorageWorld(string version, string unityVersion, uint seed, uint visit)
     {
         this.version = version;
         this.unityVersion = unityVersion;
         this.seed = seed;
+        this.visit = visit;
     }
 }
 

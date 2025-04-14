@@ -6,6 +6,18 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Main Menu/Start Menu.unity
+    guid: 2fc3c11e71c924d439f33890c75d9011
+  - enabled: 1
+    path: Assets/Scenes/Main Menu/Settings.unity
+    guid: cc0e3e4ebe332f340beb34f1e7c4e492
+  - enabled: 1
+    path: Assets/Scenes/Main Menu/World Menu.unity
+    guid: c0104f2b37705dc478485ea3ab9b40c7
+  - enabled: 1
+    path: Assets/Scenes/Main Menu/New World.unity
+    guid: 313d82ba9e3cb0845afe7176b8f72574
+  - enabled: 1
     path: Assets/Scenes/Main.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:

@@ -1944,8 +1944,6 @@ MonoBehaviour:
   speed: 8
   gravity: -9.81
   jumpHeight: 1.5
-  verticalVelocity: 0
-  additionalVelocity: {x: 0, y: 0, z: 0}
   activity: 1
 --- !u!95 &576098806
 Animator:
@@ -4868,7 +4866,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 100
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 48c35668324f9774886ff933a391e211, type: 3}
       propertyPath: m_LocalPosition.z
