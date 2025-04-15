@@ -84,6 +84,7 @@ public class World : MonoBehaviour
         random = new Unity.Mathematics.Random((uint)System.DateTime.Now.Ticks);
 
         LoadWorld();
+        LoadCharacter();
     }
 
     private void Update()
@@ -147,12 +148,6 @@ public class World : MonoBehaviour
         Storage.SetWorld(storageWorld);
     }
 
-    private void LoadWorld()
-    {
-        storageWorld = Storage.GetWorld();
-        Seed.seed = storageWorld.seed;
-    }
-
     private void SaveCharacter()
     {
         storageCharacter.health = Player.Instance.health;
@@ -163,6 +158,24 @@ public class World : MonoBehaviour
         storageCharacter.rotation = Player.Instance.transform.eulerAngles.y;
 
         Storage.SetCharacter(storageCharacter);
+    }
+
+    private void LoadWorld()
+    {
+        storageWorld = Storage.GetWorld();
+        Seed.seed = storageWorld.seed;
+    }
+
+    private void LoadCharacter()
+    {
+        storageCharacter = Storage.GetCharacter();
+
+        Player.Instance.health = storageCharacter.health;
+        Player.Instance.thirst = storageCharacter.thirst;
+        Player.Instance.hunger = storageCharacter.hunger;
+        Player.Instance.temperature = storageCharacter.temperature;
+        Player.Instance.transform.rotation = Quaternion.Euler(0, storageCharacter.rotation, 0);
+        Player.Instance.WarpPlayer(storageCharacter.position);
     }
 
     // It doesn't remove the chunk from the dictionary, only destroy the chunks
@@ -207,21 +220,10 @@ public class World : MonoBehaviour
         // Load player after chunk generation
         if (!initPlayer)
         {
-            storageCharacter = Storage.GetCharacter();
-
-            Player.Instance.health = storageCharacter.health;
-            Player.Instance.thirst = storageCharacter.thirst;
-            Player.Instance.hunger = storageCharacter.hunger;
-            Player.Instance.temperature = storageCharacter.temperature;
-            Player.Instance.transform.rotation = Quaternion.Euler(0, storageCharacter.rotation, 0);
-
-            if (storageWorld.visit > 0)
-                Player.Instance.WarpPlayer(storageCharacter.position);
-            else
+            if (storageWorld.visit == 0)
                 Player.Instance.WarpPlayerUp(Vector2.zero);
 
             storageWorld.visit++;
-
             initPlayer = true;
         }
 
