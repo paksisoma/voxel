@@ -744,17 +744,18 @@ public class World : MonoBehaviour
     public Chunk GetChunk(Vector3Int chunkPosition)
     {
         if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
-            return chunk.chunks[chunkPosition.y];
-        else
-            return null;
+            if (chunkPosition.y >= 0 && chunkPosition.y < chunk.chunks.Length)
+                return chunk.chunks[chunkPosition.y];
+
+        return null;
     }
 
     public bool IsValidChunk(Vector3Int chunkPosition)
     {
         if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
             return chunk.chunks[chunkPosition.y] != null;
-        else
-            return false;
+
+        return false;
     }
 
     public bool TryGetGroundPosition(Vector3Int worldPosition, out Vector3Int groundPosition)
