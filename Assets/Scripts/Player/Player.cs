@@ -92,6 +92,7 @@ public class Player : MonoBehaviour
     public void WarpPlayer(Vector3 worldPosition)
     {
         controller.enabled = false;
+        ThirdPersonCamera.Instance.smoothPosition = worldPosition;
         controller.transform.position = worldPosition;
         controller.enabled = true;
     }

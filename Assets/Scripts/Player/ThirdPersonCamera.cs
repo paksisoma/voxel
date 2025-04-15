@@ -17,7 +17,7 @@ public class ThirdPersonCamera : MonoBehaviour
     private float pitch = 0.0f;
 
     public float smoothSpeed = 5f;
-    private Vector3 smoothPosition;
+    public Vector3 smoothPosition;
 
     public bool active = true;
 
