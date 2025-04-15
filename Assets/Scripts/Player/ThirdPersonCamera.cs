@@ -13,8 +13,8 @@ public class ThirdPersonCamera : MonoBehaviour
     public float zoomSpeed = 2.0f;
     public float minYAngle = -20f, maxYAngle = 60f;
 
-    private float yaw = 0.0f;
-    private float pitch = 0.0f;
+    public float yaw = 0.0f;
+    public float pitch = 0.0f;
 
     public float smoothSpeed = 5f;
     public Vector3 smoothPosition;

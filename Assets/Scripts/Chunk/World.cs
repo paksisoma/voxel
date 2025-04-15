@@ -157,6 +157,9 @@ public class World : MonoBehaviour
         storageCharacter.position = Player.Instance.transform.position;
         storageCharacter.rotation = Player.Instance.transform.eulerAngles.y;
 
+        storageCharacter.yaw = ThirdPersonCamera.Instance.yaw;
+        storageCharacter.pitch = ThirdPersonCamera.Instance.pitch;
+
         Storage.SetCharacter(storageCharacter);
     }
 
@@ -176,6 +179,9 @@ public class World : MonoBehaviour
         Player.Instance.temperature = storageCharacter.temperature;
         Player.Instance.transform.rotation = Quaternion.Euler(0, storageCharacter.rotation, 0);
         Player.Instance.WarpPlayer(storageCharacter.position);
+
+        ThirdPersonCamera.Instance.yaw = storageCharacter.yaw;
+        ThirdPersonCamera.Instance.pitch = storageCharacter.pitch;
     }
 
     // It doesn't remove the chunk from the dictionary, only destroy the chunks
