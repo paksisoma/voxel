@@ -18,17 +18,12 @@ public class Items : MonoBehaviour
     public Dictionary<int, Block> blocks = new Dictionary<int, Block>();
     public Dictionary<int, Material> materials = new Dictionary<int, Material>();
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
         else
-        {
             Destroy(gameObject);
-        }
 
         foreach (Item item in itemList)
         {

@@ -8,17 +8,12 @@ public class Tooltip : MonoBehaviour
     public GameObject tooltip;
     public Text label;
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
         else
-        {
             Destroy(gameObject);
-        }
     }
 
     private void Update()

@@ -17,14 +17,9 @@ public class HudManager : MonoBehaviour
     private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
         else
-        {
             Destroy(gameObject);
-        }
 
         healthMaxWidth = healthTransform.rect.width;
         thirstMaxWidth = thirstTransform.rect.width;

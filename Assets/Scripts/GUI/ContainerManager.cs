@@ -6,17 +6,12 @@ public class ContainerManager : MonoBehaviour
 
     public GameObject panel;
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
         else
-        {
             Destroy(gameObject);
-        }
     }
 
     void Update()

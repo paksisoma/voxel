@@ -68,14 +68,9 @@ public class World : MonoBehaviour
     private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
         else
-        {
             Destroy(gameObject);
-        }
 
         chunks = new Dictionary<Vector2Int, ChunkData>();
         chunkQueue = new List<Vector2Int>();
@@ -135,6 +130,11 @@ public class World : MonoBehaviour
     }
 
     private void OnApplicationQuit()
+    {
+        Save();
+    }
+
+    public void Save()
     {
         foreach ((Vector2Int chunkPosition, _) in chunks)
             DestroyVerticalChunk(chunkPosition);

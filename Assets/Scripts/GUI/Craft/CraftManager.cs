@@ -10,18 +10,14 @@ public class CraftManager : MonoBehaviour
 
     public List<Craftable> craftables = new List<Craftable>();
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-            UpdateRows();
-        }
         else
-        {
             Destroy(gameObject);
-        }
+
+        UpdateRows();
     }
 
     public void UpdateRows()
