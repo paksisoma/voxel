@@ -76,7 +76,7 @@ public class InventoryManager : MonoBehaviour
         {
             InventoryItem inventoryItem = slot.GetComponentInChildren<InventoryItem>();
 
-            if (inventoryItem.item.itemID == item.itemID)
+            if (inventoryItem != null && inventoryItem.item.itemID == item.itemID)
                 return inventoryItem;
         }
 
