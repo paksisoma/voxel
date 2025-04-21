@@ -4,10 +4,8 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - Tree
-  - Rock
-  - Stick
   - NPC
+  - IgnorePathFinding
   layers:
   - Default
   - TransparentFX

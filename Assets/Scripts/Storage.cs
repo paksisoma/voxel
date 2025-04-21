@@ -5,28 +5,34 @@ using static Constants;
 
 public static class Storage
 {
-    public static Dictionary<Vector3Int, (int, int)> chunkSeek; // Chunk position, start, length
+    private static Dictionary<Vector3Int, (int, int)> blocksSeek; // Chunk position, start, length
+    private static Dictionary<Vector2Int, (int, int)> specialsSeek; // Chunk position, start, length
 
     private static string worldPath;
-    private static string indexPath;
+    private static string blocksIndexPath;
     private static string blocksPath;
+    private static string specialsIndexPath;
+    private static string specialsPath;
     private static string characterPath;
 
     private const int blockDataBytes = 4;
+    private const int specialDataBytes = 13;
 
     public static void LoadMap(string mapName)
     {
         string path = Application.dataPath + "/Save/" + mapName + "/";
 
         worldPath = path + "/world_00.bin";
-        indexPath = path + "/world_01.bin";
+        blocksIndexPath = path + "/world_01.bin";
         blocksPath = path + "/world_02.bin";
+        specialsIndexPath = path + "/world_03.bin";
+        specialsPath = path + "/world_04.bin";
         characterPath = path + "/character.bin";
 
-        // Load index table
-        chunkSeek = new Dictionary<Vector3Int, (int, int)>();
+        // Load blocks index table
+        blocksSeek = new Dictionary<Vector3Int, (int, int)>();
 
-        using (BinaryReader reader = new BinaryReader(File.Open(indexPath, FileMode.Open)))
+        using (BinaryReader reader = new BinaryReader(File.Open(blocksIndexPath, FileMode.Open)))
         {
             while (reader.BaseStream.Position < reader.BaseStream.Length)
             {
@@ -36,7 +42,23 @@ public static class Storage
                 int start = reader.ReadInt32();
                 int length = reader.ReadInt32();
 
-                chunkSeek.Add(new Vector3Int(x, y, z), (start, length));
+                blocksSeek.Add(new Vector3Int(x, y, z), (start, length));
+            }
+        }
+
+        // Load specials index table
+        specialsSeek = new Dictionary<Vector2Int, (int, int)>();
+
+        using (BinaryReader reader = new BinaryReader(File.Open(specialsIndexPath, FileMode.Open)))
+        {
+            while (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                int x = reader.ReadInt32();
+                int y = reader.ReadInt32();
+                int start = reader.ReadInt32();
+                int length = reader.ReadInt32();
+
+                specialsSeek.Add(new Vector2Int(x, y), (start, length));
             }
         }
     }
@@ -58,13 +80,21 @@ public static class Storage
         worldPath = path + "/world_00.bin";
         File.Create(worldPath).Close();
 
-        // Index table file
-        indexPath = path + "/world_01.bin";
-        File.Create(indexPath).Close();
+        // Blocks index table file
+        blocksIndexPath = path + "/world_01.bin";
+        File.Create(blocksIndexPath).Close();
 
-        // Block file
+        // Blocks file
         blocksPath = path + "/world_02.bin";
         File.Create(blocksPath).Close();
+
+        // Specials index table file
+        specialsIndexPath = path + "/world_03.bin";
+        File.Create(specialsIndexPath).Close();
+
+        // Specials file
+        specialsPath = path + "/world_04.bin";
+        File.Create(specialsPath).Close();
 
         // Character file
         characterPath = path + "/character.bin";
@@ -74,14 +104,14 @@ public static class Storage
         SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, 0, 0, new List<StorageInventory>())); // Init character data
     }
 
-    public static void SaveChunk(Vector3Int chunkPosition, List<StorageBlockData> blocks)
+    public static void SaveBlocks(Vector3Int chunkPosition, List<StorageBlockData> blocks)
     {
-        bool chunkContains = chunkSeek.ContainsKey(chunkPosition);
+        bool chunkContains = blocksSeek.ContainsKey(chunkPosition);
 
         if (chunkContains)
         {
             AppendBlocks(blocks, out int start);
-            LinkChunk(chunkPosition, start, blocks.Count);
+            LinkBlocks(chunkPosition, start, blocks.Count);
         }
         else
         {
@@ -113,7 +143,7 @@ public static class Storage
 
     public static void AppendIndex(Vector3Int chunkPosition, int start, int length)
     {
-        using (BinaryWriter writer = new BinaryWriter(File.Open(indexPath, FileMode.Append)))
+        using (BinaryWriter writer = new BinaryWriter(File.Open(blocksIndexPath, FileMode.Append)))
         {
             writer.Write(chunkPosition.x); // X position
             writer.Write(chunkPosition.y); // Y position
@@ -123,13 +153,13 @@ public static class Storage
             writer.Write(length); // Length
         }
 
-        chunkSeek.Add(chunkPosition, (start, length)); // Add to chunkSeek dictionary
+        blocksSeek.Add(chunkPosition, (start, length)); // Add to blocksSeek dictionary
     }
 
-    public static void LinkChunk(Vector3Int chunkPosition, int newStart, int newLength)
+    public static void LinkBlocks(Vector3Int chunkPosition, int newStart, int newLength)
     {
-        int start = chunkSeek[chunkPosition].Item1; // Start
-        int length = chunkSeek[chunkPosition].Item2; // Length
+        int start = blocksSeek[chunkPosition].Item1; // Start
+        int length = blocksSeek[chunkPosition].Item2; // Length
 
         int seek = 0;
 
@@ -161,7 +191,7 @@ public static class Storage
     {
         List<StorageBlockData> blocks = new List<StorageBlockData>();
 
-        if (chunkSeek.TryGetValue(chunkPosition, out (int, int) value))
+        if (blocksSeek.TryGetValue(chunkPosition, out (int, int) value))
         {
             int start = value.Item1;
             int length = value.Item2;
@@ -197,6 +227,130 @@ public static class Storage
         }
 
         return blocks;
+    }
+
+    public static void SaveSpecials(Vector2Int chunkPosition, List<StorageSpecialData> specials)
+    {
+        bool seekContains = specialsSeek.ContainsKey(chunkPosition);
+
+        if (seekContains)
+        {
+            AppendSpecials(specials, out int start);
+            LinkSpecials(chunkPosition, start, specials.Count);
+        }
+        else
+        {
+            AppendSpecials(specials, out int start);
+            AppendSpecialsIndex(chunkPosition, start, specials.Count);
+        }
+    }
+
+    public static void AppendSpecials(List<StorageSpecialData> specials, out int startPosition)
+    {
+        using (BinaryWriter writer = new BinaryWriter(File.Open(specialsPath, FileMode.Append)))
+        {
+            startPosition = (int)writer.BaseStream.Position; // Get start position for indextable
+
+            foreach (StorageSpecialData specialData in specials)
+            {
+                writer.Write(specialData.position.x); // X position
+                writer.Write(specialData.position.y); // Y position
+                writer.Write(specialData.position.z); // Z position
+
+                writer.Write(specialData.type); // Type
+            }
+
+            // Leave 8 bytes for linking (start, length)
+            writer.Write(-1);
+            writer.Write(-1);
+        }
+    }
+
+    public static void AppendSpecialsIndex(Vector2Int chunkPosition, int start, int length)
+    {
+        using (BinaryWriter writer = new BinaryWriter(File.Open(specialsIndexPath, FileMode.Append)))
+        {
+            writer.Write(chunkPosition.x); // X position
+            writer.Write(chunkPosition.y); // Y position
+
+            writer.Write(start); // Start
+            writer.Write(length); // Length
+        }
+
+        specialsSeek.Add(chunkPosition, (start, length)); // Add to specialsSeek dictionary
+    }
+
+    public static void LinkSpecials(Vector2Int chunkPosition, int newStart, int newLength)
+    {
+        int start = specialsSeek[chunkPosition].Item1; // Start
+        int length = specialsSeek[chunkPosition].Item2; // Length
+
+        int seek = 0;
+
+        // Find last not linked chunk
+        while (start != -1)
+        {
+            using (BinaryReader reader = new BinaryReader(File.Open(specialsPath, FileMode.Open)))
+            {
+                seek = length * specialDataBytes + start; // Calculate seek position
+
+                reader.BaseStream.Seek(seek, SeekOrigin.Begin); // Seek to end of the chunk
+
+                start = reader.ReadInt32();
+                length = reader.ReadInt32();
+            }
+        }
+
+        // Found
+        using (BinaryWriter writer = new BinaryWriter(File.Open(specialsPath, FileMode.Open, FileAccess.Write)))
+        {
+            writer.BaseStream.Seek(seek, SeekOrigin.Begin);
+
+            writer.Write(newStart); // Start
+            writer.Write(newLength); // Length
+        }
+    }
+
+    public static List<StorageSpecialData> GetSpecials(Vector2Int chunkPosition)
+    {
+        List<StorageSpecialData> specials = new List<StorageSpecialData>();
+
+        if (specialsSeek.TryGetValue(chunkPosition, out (int, int) value))
+        {
+            int start = value.Item1;
+            int length = value.Item2;
+
+            while (start != -1)
+                specials.AddRange(ReadSpecials(start, length, out start, out length));
+        }
+
+        return specials;
+    }
+
+    private static List<StorageSpecialData> ReadSpecials(int start, int length, out int nextStart, out int nextLength)
+    {
+        List<StorageSpecialData> specials = new List<StorageSpecialData>();
+
+        using (BinaryReader reader = new BinaryReader(File.Open(specialsPath, FileMode.Open)))
+        {
+            reader.BaseStream.Seek(start, SeekOrigin.Begin);
+
+            for (int i = 0; i < length; i++)
+            {
+                int x = reader.ReadInt32(); // X position
+                int y = reader.ReadInt32(); // Y position
+                int z = reader.ReadInt32(); // Z position
+
+                byte type = reader.ReadByte(); // Type
+
+                specials.Add(new StorageSpecialData(new Vector3Int(x, y, z), type)); // Add special data to list
+            }
+
+            nextStart = reader.ReadInt32();
+            nextLength = reader.ReadInt32();
+        }
+
+        return specials;
     }
 
     public static void SetCharacter(StorageCharacter character)
@@ -285,6 +439,18 @@ public struct StorageBlockData
     public byte type;
 
     public StorageBlockData(Vector3Byte position, byte type)
+    {
+        this.position = position;
+        this.type = type;
+    }
+}
+
+public struct StorageSpecialData
+{
+    public Vector3Int position;
+    public byte type;
+
+    public StorageSpecialData(Vector3Int position, byte type)
     {
         this.position = position;
         this.type = type;

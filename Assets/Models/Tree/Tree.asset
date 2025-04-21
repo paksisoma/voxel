@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2657abdb8ec7206489992640661be9fd, type: 3}
-  m_Name: Rock
+  m_Name: Tree
   m_EditorClassIdentifier: 
-  itemName: Rock
-  itemID: 103
-  itemImage: {fileID: 21300000, guid: 8c1828b3ea917ef49a71f75d05775839, type: 3}
-  stackable: 1
-  gameObject: {fileID: 1715485627896949888, guid: cdb3fea771ffd51499442043240edc08, type: 3}
+  itemName: Tree
+  itemID: 106
+  itemImage: {fileID: 0}
+  stackable: 0
+  gameObject: {fileID: 5330539537610832871, guid: 8f80670192733ee49b6dfe681d4f38d5, type: 3}

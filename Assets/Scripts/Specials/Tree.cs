@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Tree : MonoBehaviour
+public class Tree : SpecialObject
 {
     public int health = 100;
 
@@ -35,11 +35,7 @@ public class Tree : MonoBehaviour
         health -= damage;
 
         if (health <= 0)
-        {
-            Destroy(gameObject);
-            Vector3Int worldPosition = Vector3Int.FloorToInt(transform.position) + new Vector3Int(0, 1, 0);
-            World.Instance.SetBlock(worldPosition, 0);
-        }
+            Destroy(transform.gameObject);
     }
 
     public void ChopTree()
@@ -55,5 +51,11 @@ public class Tree : MonoBehaviour
             targetRotation = Quaternion.Euler(x * 1, 0, z * 1);
             isTilting = true;
         }
+    }
+
+    public override void Hit()
+    {
+        TakeDamage(20);
+        ChopTree();
     }
 }

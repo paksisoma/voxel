@@ -70,15 +70,6 @@ public class NPC : MonoBehaviour
         chunkPosition = Utils.WorldPositionToChunkPosition(worldPosition);
 
         // Destroy if out of chunk
-        /*if (worldPosition.x < World.Instance.leftBorder)
-            Destroy(transform.gameObject);
-        else if (worldPosition.x > World.Instance.rightBorder)
-            Destroy(transform.gameObject);
-        else if (worldPosition.z < World.Instance.bottomBorder)
-            Destroy(transform.gameObject);
-        else if (worldPosition.z > World.Instance.topBorder)
-            Destroy(transform.gameObject);*/
-
         if (!World.Instance.IsValidChunk(chunkPosition))
             Destroy(transform.gameObject);
 

@@ -5,6 +5,11 @@ public class MouseHandler : MonoBehaviour
     public Camera playerCamera;
     public float maxDistance = 10f;
 
+    public float holdThreshold = 0.25f;
+    private float mouseDownTime = 0f;
+    private bool isMouseDown = false;
+    private bool isHolding = false;
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -12,57 +17,105 @@ public class MouseHandler : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonUp(0))
-            Player.Instance.animator.SetBool("isChopping", false);
-
-        if (!Input.GetMouseButtonDown(0))
-            return;
-
         if (ContainerManager.Instance.panel.activeSelf)
-            return;
+        {
+            if (isHolding)
+                MouseHoldEnd();
 
+            isMouseDown = false;
+            isHolding = false;
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            isMouseDown = true;
+            mouseDownTime = Time.time;
+            isHolding = false;
+        }
+
+        if (Input.GetMouseButtonUp(0))
+        {
+            if (isHolding)
+                MouseHoldEnd();
+            else if (Time.time - mouseDownTime < holdThreshold)
+                MouseClick();
+
+            isMouseDown = false;
+            isHolding = false;
+        }
+
+        if (isMouseDown && !isHolding)
+        {
+            float heldDuration = Time.time - mouseDownTime;
+
+            if (heldDuration >= holdThreshold)
+            {
+                MouseHoldStart();
+                isHolding = true;
+            }
+        }
+    }
+
+    private void MouseClick()
+    {
+        InventoryItem activeItem = InventoryManager.Instance.activeItem;
+        GameObject special = null;
+
+        if (GetHitPointOut(out Vector3Int worldPosition))
+            special = World.Instance.GetSpecial(worldPosition);
+
+        if (special == null)
+        {
+            if (activeItem != null)
+            {
+                if (activeItem.item is Block) // Block selected
+                {
+                    if (GetHitPointOut(out worldPosition))
+                    {
+                        World.Instance.SetBlock(worldPosition, activeItem.item.itemID);
+
+                        activeItem.quantity--;
+                        activeItem.UpdateQuantity();
+                    }
+                }
+                else if (activeItem.item is Special) // Special selected
+                {
+                    if (GetHitPointOut(out worldPosition))
+                    {
+                        World.Instance.AddSpecial(worldPosition, (Special)activeItem.item);
+
+                        activeItem.quantity--;
+                        activeItem.UpdateQuantity();
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (special.TryGetComponent(out SpecialObject specialObject))
+                specialObject.Click();
+        }
+    }
+
+    private void MouseHoldStart()
+    {
         InventoryItem activeItem = InventoryManager.Instance.activeItem;
 
-        if (activeItem == null) // No item selected
+        if (activeItem == null)
         {
-            if (GetHitPointOut(out Vector3Int worldPosition))
-            {
-                GameObject prefab = World.Instance.GetPrefab(worldPosition);
-
-                if (prefab != null)
-                {
-                    if (prefab.CompareTag("Rock"))
-                    {
-                        Destroy(prefab);
-                        World.Instance.SetBlock(worldPosition, 0);
-                        InventoryManager.Instance.AddItem(103);
-                    }
-                    else if (prefab.CompareTag("Stick"))
-                    {
-                        Destroy(prefab);
-                        World.Instance.SetBlock(worldPosition, 0);
-                        InventoryManager.Instance.AddItem(104);
-                    }
-                }
-            }
+            // TODO: Handle no item selected
         }
-        else // Item selected
+        else
         {
             if (activeItem.item is Tool) // Tool selected
-            {
                 Player.Instance.animator.SetBool("isChopping", true);
-            }
-            else if (activeItem.item is Block) // Block selected
-            {
-                if (GetHitPointOut(out Vector3Int worldPosition))
-                {
-                    World.Instance.SetBlock(worldPosition, activeItem.item.itemID);
-
-                    activeItem.quantity--;
-                    activeItem.UpdateQuantity();
-                }
-            }
         }
+    }
+
+    private void MouseHoldEnd()
+    {
+        Player.Instance.animator.SetBool("isChopping", false);
     }
 
     public void Chop()
@@ -111,12 +164,8 @@ public class MouseHandler : MonoBehaviour
                 }
                 else if (tool.canChop)
                 {
-                    if (GetHitPointPrefab(out GameObject gameObject) && gameObject.CompareTag("Tree"))
-                    {
-                        Tree tree = gameObject.GetComponent<Tree>();
-                        tree.TakeDamage(20);
-                        tree.ChopTree();
-                    }
+                    if (GetHitPointPrefab(out GameObject gameObject) && gameObject.TryGetComponent(out SpecialObject specialObject))
+                        specialObject.Hit();
                 }
             }
         }

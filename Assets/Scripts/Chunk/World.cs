@@ -12,11 +12,6 @@ public class World : MonoBehaviour
 {
     public static World Instance { get; private set; }
 
-    /*public int leftBorder { get; private set; }
-    public int rightBorder { get; private set; }
-    public int topBorder { get; private set; }
-    public int bottomBorder { get; private set; }*/
-
     public Unity.Mathematics.Random random;
 
     private Dictionary<Vector2Int, ChunkData> chunks;
@@ -24,37 +19,19 @@ public class World : MonoBehaviour
 
     private bool render = false;
 
-    private int _renderDistance;
-    public int renderDistance
-    {
-        get => _renderDistance;
-        set
-        {
-            _renderDistance = value;
-
-            if (_renderDistance > value)
-                DestroyChunks();
-        }
-    }
+    public int renderDistance;
 
     [Header("Chunk")]
     public GameObject chunkParent;
 
-    [Header("Tree")]
-    public GameObject treeObject;
-    public GameObject treeParent;
-
-    [Header("Rock")]
-    public GameObject rockObject;
-    public GameObject rockParent;
-
-    [Header("Stick")]
-    public GameObject stickObject;
-    public GameObject stickParent;
-
     [Header("Cloud")]
     public Material cloudMaterial;
     public GameObject cloudParent;
+
+    public GameObject specialsParent;
+    private GameObject treeObject;
+    private GameObject rockObject;
+    private GameObject stickObject;
 
     [Header("NPC")]
     public GameObject npcParent;
@@ -76,6 +53,10 @@ public class World : MonoBehaviour
         chunkQueue = new List<Vector2Int>();
         renderDistance = RENDER_DISTANCE;
 
+        treeObject = ((Special)Items.Instance.items[106]).gameObject;
+        rockObject = ((Special)Items.Instance.items[103]).gameObject;
+        stickObject = ((Special)Items.Instance.items[104]).gameObject;
+
         random = new Unity.Mathematics.Random((uint)System.DateTime.Now.Ticks);
 
         LoadWorld();
@@ -88,12 +69,6 @@ public class World : MonoBehaviour
             return;
 
         Vector3Int playerChunk = Player.Instance.chunkPosition;
-
-        // Borders
-        /*leftBorder = -renderDistance * CHUNK_SIZE_NO_PADDING + (playerChunk.x * CHUNK_SIZE_NO_PADDING);
-        rightBorder = renderDistance * CHUNK_SIZE_NO_PADDING + CHUNK_SIZE_NO_PADDING + (playerChunk.x * CHUNK_SIZE_NO_PADDING) - 1;
-        bottomBorder = -renderDistance * CHUNK_SIZE_NO_PADDING + (playerChunk.z * CHUNK_SIZE_NO_PADDING);
-        topBorder = renderDistance * CHUNK_SIZE_NO_PADDING + CHUNK_SIZE_NO_PADDING + (playerChunk.z * CHUNK_SIZE_NO_PADDING) - 1;*/
 
         // Generate near chunk if not exists
         for (int x = -renderDistance; x <= renderDistance; x++)
@@ -148,6 +123,12 @@ public class World : MonoBehaviour
         Storage.SetWorld(storageWorld);
     }
 
+    private void LoadWorld()
+    {
+        storageWorld = Storage.GetWorld();
+        Seed.seed = storageWorld.seed;
+    }
+
     private void SaveCharacter()
     {
         storageCharacter.health = Player.Instance.health;
@@ -161,12 +142,6 @@ public class World : MonoBehaviour
         storageCharacter.pitch = ThirdPersonCamera.Instance.pitch;
 
         Storage.SetCharacter(storageCharacter);
-    }
-
-    private void LoadWorld()
-    {
-        storageWorld = Storage.GetWorld();
-        Seed.seed = storageWorld.seed;
     }
 
     private void LoadCharacter()
@@ -191,20 +166,26 @@ public class World : MonoBehaviour
 
         // Destroy vertical chunks
         for (int i = 0; i < verticalChunk.chunks.Length; i++)
+        {
             if (verticalChunk.chunks[i] != null)
             {
                 Destroy(verticalChunk.chunks[i].mesh);
 
                 // Save chunk changes
-                List<StorageBlockData> changes = verticalChunk.chunks[i].changes;
+                List<StorageBlockData> blockChanges = verticalChunk.chunks[i].changes;
 
-                if (changes.Count > 0)
-                    Storage.SaveChunk(new Vector3Int(chunkPosition.x, i, chunkPosition.y), changes);
+                if (blockChanges.Count > 0)
+                    Storage.SaveBlocks(new Vector3Int(chunkPosition.x, i, chunkPosition.y), blockChanges);
             }
+        }
 
-        // Destroy prefabs
-        foreach (GameObject prefab in verticalChunk.prefabs.Values)
-            Destroy(prefab);
+        // Destroy specials
+        foreach (GameObject special in verticalChunk.specials.Values)
+            Destroy(special);
+
+        // Save specials changes
+        if (verticalChunk.specialChanges.Count > 0)
+            Storage.SaveSpecials(chunkPosition, verticalChunk.specialChanges);
 
         // Destroy cloud
         Destroy(verticalChunk.cloud.mesh);
@@ -234,21 +215,6 @@ public class World : MonoBehaviour
         }
 
         render = false;
-    }
-
-    private void DestroyChunks()
-    {
-        // Destroy chunks
-        foreach (Transform child in chunkParent.transform)
-            Destroy(child.gameObject);
-
-        // Destroy trees
-        foreach (Transform child in treeParent.transform)
-            Destroy(child.gameObject);
-
-        // Destroy clouds
-        foreach (Transform child in cloudParent.transform)
-            Destroy(child.gameObject);
     }
 
     private void GenerateChunk(Vector2Int chunkPosition)
@@ -526,8 +492,8 @@ public class World : MonoBehaviour
             verticalChunks[i] = chunk;
         }
 
-        // Prefabs placement
-        Dictionary<Vector3Int, GameObject> prefabs = new Dictionary<Vector3Int, GameObject>();
+        // Specials placement
+        Dictionary<Vector3Int, GameObject> specials = new Dictionary<Vector3Int, GameObject>();
 
         for (int i = 0; i < treeMap.Length; i++)
         {
@@ -537,67 +503,59 @@ public class World : MonoBehaviour
                 {
                     int x = i / CHUNK_SIZE_NO_PADDING;
                     int z = i % CHUNK_SIZE_NO_PADDING;
-
-                    int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
-
-                    int y = height % CHUNK_SIZE_NO_PADDING;
+                    int y = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
 
                     // Place tree above water and under mountain
-                    if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                    if (y > WATER_HEIGHT && y < MOUNTAIN_TRANSITION_START)
                     {
-                        GameObject tree = Instantiate(treeObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
-                        tree.transform.SetParent(treeParent.transform);
+                        Vector3Int objectPosition = new Vector3Int(worldPosition.x + x, y - 1, worldPosition.y + z);
+                        GameObject tree = Instantiate(treeObject, objectPosition, Quaternion.identity);
+                        tree.transform.SetParent(specialsParent.transform);
                         tree.isStatic = true;
                         StaticBatchingUtility.Combine(tree);
-                        prefabs.Add(new Vector3Int(x + 1, y, z + 1), tree);
+                        specials.Add(objectPosition, tree);
                     }
                 }
                 else if (rockMap[i]) // Stone
                 {
                     int x = i / CHUNK_SIZE_NO_PADDING;
                     int z = i % CHUNK_SIZE_NO_PADDING;
-
-                    int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
-
-                    int y = height % CHUNK_SIZE_NO_PADDING;
+                    int y = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
 
                     // Place rock above water and under mountain
-                    if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                    if (y > WATER_HEIGHT && y < MOUNTAIN_TRANSITION_START)
                     {
-                        GameObject rock = Instantiate(rockObject, new Vector3(worldPosition.x + x, height - 1.5f, worldPosition.y + z), Quaternion.identity);
-                        rock.transform.SetParent(rockParent.transform);
+                        Vector3Int objectPosition = new Vector3Int(worldPosition.x + x, y - 1, worldPosition.y + z);
+                        GameObject rock = Instantiate(rockObject, objectPosition, Quaternion.identity);
+                        rock.transform.SetParent(specialsParent.transform);
                         rock.isStatic = true;
                         rock.transform.Rotate(0f, (float)rockNoiseMap[i] * 180, 0f, Space.World);
                         StaticBatchingUtility.Combine(rock);
-
-                        prefabs.Add(new Vector3Int(x + 1, y, z + 1), rock);
+                        specials.Add(objectPosition, rock);
                     }
                 }
                 else if (stickMap[i])
                 {
                     int x = i / CHUNK_SIZE_NO_PADDING;
                     int z = i % CHUNK_SIZE_NO_PADDING;
-
-                    int height = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
-
-                    int y = height % CHUNK_SIZE_NO_PADDING;
+                    int y = terrainMap[(x + 1) * CHUNK_SIZE + (z + 1)];
 
                     // Place stick above water and under mountain
-                    if (height > WATER_HEIGHT && height < MOUNTAIN_TRANSITION_START)
+                    if (y > WATER_HEIGHT && y < MOUNTAIN_TRANSITION_START)
                     {
-                        GameObject stick = Instantiate(stickObject, new Vector3(worldPosition.x + x, height - 1.45f, worldPosition.y + z), Quaternion.identity);
-                        stick.transform.SetParent(stickParent.transform);
+                        Vector3Int objectPosition = new Vector3Int(worldPosition.x + x, y - 1, worldPosition.y + z);
+                        GameObject stick = Instantiate(stickObject, objectPosition, Quaternion.identity);
+                        stick.transform.SetParent(specialsParent.transform);
                         stick.isStatic = true;
                         stick.transform.Rotate(0f, (float)stickNoiseMap[i] * 180, 0f, Space.World);
                         StaticBatchingUtility.Combine(stick);
-
-                        prefabs.Add(new Vector3Int(x + 1, y, z + 1), stick);
+                        specials.Add(objectPosition, stick);
                     }
                 }
             }
         }
 
-        // Load saved changes
+        // Load blocks changes
         for (int i = 0; i < verticalChunks.Length; i++)
         {
             Chunk chunk = verticalChunks[i];
@@ -605,7 +563,6 @@ public class World : MonoBehaviour
             if (chunk != null)
             {
                 Vector3Int currentChunkPosition = new Vector3Int(chunkPosition.x, i, chunkPosition.y);
-
                 List<StorageBlockData> blocks = Storage.GetBlocks(currentChunkPosition);
 
                 if (blocks != null)
@@ -613,15 +570,27 @@ public class World : MonoBehaviour
                     {
                         chunk.SetBlock(block.position.x, block.position.y, block.position.z, block.type);
                         Vector3Int blockPosition = new Vector3Int(block.position.x, block.position.y, block.position.z);
-
-                        if (prefabs.TryGetValue(blockPosition, out GameObject prefab))
-                        {
-                            Destroy(prefab);
-                            prefabs.Remove(blockPosition);
-                        }
                     }
 
                 chunk.UpdateMesh();
+            }
+        }
+
+        // Load specials changes
+        List<StorageSpecialData> specialsStorage = Storage.GetSpecials(chunkPosition);
+
+        foreach (var special in specialsStorage)
+        {
+            if (special.type == 0 && specials.TryGetValue(special.position, out GameObject specialObject))
+            {
+                Destroy(specialObject);
+                specials.Remove(special.position);
+            }
+            else if (Items.Instance.items.TryGetValue(special.type, out Item item))
+            {
+                Special specialItem = (Special)item;
+                GameObject gameObject = Instantiate(specialItem.gameObject, special.position, Quaternion.identity, chunkParent.transform);
+                specials.Add(special.position, gameObject);
             }
         }
 
@@ -670,7 +639,7 @@ public class World : MonoBehaviour
 
         Cloud cloud = GenerateCloud(chunkPosition, new Vector3(worldPosition.x, CLOUD_HEIGHT, worldPosition.y) - new Vector3(1.5f, 1.5f, 1.5f));
 
-        ChunkData chunkData = new ChunkData(verticalChunks, cloud, prefabs);
+        ChunkData chunkData = new ChunkData(verticalChunks, cloud, specials);
         chunks.Add(chunkPosition, chunkData);
     }
 
@@ -749,6 +718,47 @@ public class World : MonoBehaviour
         return chunk.GetBlock(relativePosition);
     }
 
+    public void AddSpecial(Vector3Int worldPosition, Special special)
+    {
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunkData))
+        {
+            Vector3 position = new Vector3(worldPosition.x, worldPosition.y, worldPosition.z);
+            GameObject specialObject = Instantiate(special.gameObject, position, Quaternion.identity, chunkParent.transform);
+
+            chunkData.specials.Add(worldPosition, specialObject);
+            chunkData.specialChanges.Add(new StorageSpecialData(worldPosition, special.itemID));
+        }
+    }
+
+    public void RemoveSpecial(Vector3Int worldPosition)
+    {
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunkData))
+        {
+            if (chunkData.specials.TryGetValue(worldPosition, out GameObject specialObject))
+            {
+                chunkData.specials.Remove(worldPosition);
+                chunkData.specialChanges.Add(new StorageSpecialData(worldPosition, 0));
+
+                Destroy(specialObject);
+            }
+        }
+    }
+
+    public GameObject GetSpecial(Vector3Int worldPosition)
+    {
+        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
+
+        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
+            if (chunk.specials.TryGetValue(worldPosition, out GameObject specialObject))
+                return specialObject;
+
+        return null;
+    }
+
     public Chunk GetChunk(Vector3Int chunkPosition)
     {
         if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
@@ -761,7 +771,8 @@ public class World : MonoBehaviour
     public bool IsValidChunk(Vector3Int chunkPosition)
     {
         if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
-            return chunk.chunks[chunkPosition.y] != null;
+            if (chunkPosition.y >= 0 && chunkPosition.y < chunk.chunks.Length)
+                return chunk.chunks[chunkPosition.y] != null;
 
         return false;
     }
@@ -789,19 +800,7 @@ public class World : MonoBehaviour
     {
         Vector3Int down = position + Vector3Int.down;
 
-        return IsValidChunk(WorldPositionToChunkPosition(position)) && GetBlock(position) == 0 && GetBlock(down) != 0 && (GetPrefab(position) == null || !GetPrefab(position).CompareTag("Tree"));
-    }
-
-    public GameObject GetPrefab(Vector3Int worldPosition)
-    {
-        Vector3Int chunkPosition = WorldPositionToChunkPosition(worldPosition);
-        Vector3Int relativePosition = WorldPositionToChunkRelativePosition(chunkPosition, worldPosition);
-
-        if (chunks.TryGetValue(new Vector2Int(chunkPosition.x, chunkPosition.z), out ChunkData chunk))
-            if (chunk.prefabs.TryGetValue(relativePosition, out GameObject gameObject))
-                return gameObject;
-
-        return null;
+        return IsValidChunk(WorldPositionToChunkPosition(position)) && GetBlock(position) == 0 && GetBlock(down) != 0 && (GetSpecial(position) == null || GetSpecial(position).CompareTag("IgnorePathFinding"));
     }
 
     public IEnumerable<Vector3Int> GetNeighbourBlocks(Vector3Int position)
@@ -949,13 +948,16 @@ public class World : MonoBehaviour
     {
         public Chunk[] chunks;
         public Cloud cloud;
-        public Dictionary<Vector3Int, GameObject> prefabs;
 
-        public ChunkData(Chunk[] chunks, Cloud cloud, Dictionary<Vector3Int, GameObject> prefabs)
+        public Dictionary<Vector3Int, GameObject> specials;
+        public List<StorageSpecialData> specialChanges;
+
+        public ChunkData(Chunk[] chunks, Cloud cloud, Dictionary<Vector3Int, GameObject> specials)
         {
             this.chunks = chunks;
             this.cloud = cloud;
-            this.prefabs = prefabs;
+            this.specials = specials;
+            this.specialChanges = new List<StorageSpecialData>();
         }
     }
 }
