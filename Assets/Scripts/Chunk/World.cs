@@ -565,12 +565,11 @@ public class World : MonoBehaviour
                 Vector3Int currentChunkPosition = new Vector3Int(chunkPosition.x, i, chunkPosition.y);
                 List<StorageBlockData> blocks = Storage.GetBlocks(currentChunkPosition);
 
-                if (blocks != null)
-                    foreach (StorageBlockData block in blocks)
-                    {
-                        chunk.SetBlock(block.position.x, block.position.y, block.position.z, block.type);
-                        Vector3Int blockPosition = new Vector3Int(block.position.x, block.position.y, block.position.z);
-                    }
+                foreach (StorageBlockData block in blocks)
+                {
+                    chunk.SetBlock(block.position.x, block.position.y, block.position.z, block.type);
+                    Vector3Int blockPosition = new Vector3Int(block.position.x, block.position.y, block.position.z);
+                }
 
                 chunk.UpdateMesh();
             }
@@ -583,7 +582,7 @@ public class World : MonoBehaviour
         {
             if (special.type == 0 && specials.TryGetValue(special.position, out GameObject specialObject))
             {
-                Destroy(specialObject);
+                DestroyImmediate(specialObject);
                 specials.Remove(special.position);
             }
             else if (Items.Instance.items.TryGetValue(special.type, out Item item))
