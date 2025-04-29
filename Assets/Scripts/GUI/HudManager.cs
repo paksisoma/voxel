@@ -5,11 +5,13 @@ public class HudManager : MonoBehaviour
     public static HudManager Instance { get; private set; }
 
     public RectTransform healthTransform;
+    public RectTransform armorTransform;
     public RectTransform hungerTransform;
     public RectTransform thirstTransform;
     public RectTransform temperatureTransform;
 
     private float healthMaxWidth;
+    private float armorMaxWidth;
     private float thirstMaxWidth;
     private float hungerMaxWidth;
     private float temperatureMaxHeight;
@@ -22,6 +24,7 @@ public class HudManager : MonoBehaviour
             Destroy(gameObject);
 
         healthMaxWidth = healthTransform.rect.width;
+        armorMaxWidth = armorTransform.rect.width;
         thirstMaxWidth = thirstTransform.rect.width;
         hungerMaxWidth = hungerTransform.rect.width;
         temperatureMaxHeight = temperatureTransform.rect.height;
@@ -31,6 +34,12 @@ public class HudManager : MonoBehaviour
     {
         float newWidth = healthMaxWidth * (percent - 1);
         healthTransform.sizeDelta = new Vector2(newWidth, healthTransform.sizeDelta.y);
+    }
+
+    public void SetArmor(float percent)
+    {
+        float newWidth = armorMaxWidth * (percent - 1);
+        armorTransform.sizeDelta = new Vector2(newWidth, armorTransform.sizeDelta.y);
     }
 
     public void SetThirst(float percent)
@@ -48,6 +57,6 @@ public class HudManager : MonoBehaviour
     public void SetTemperature(float percent)
     {
         float newHeight = temperatureMaxHeight * (percent - 1);
-        temperatureTransform.sizeDelta = new Vector2(temperatureTransform.sizeDelta.y, newHeight);
+        temperatureTransform.sizeDelta = new Vector2(temperatureTransform.sizeDelta.x, newHeight);
     }
 }

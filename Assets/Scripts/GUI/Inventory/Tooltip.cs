@@ -5,7 +5,8 @@ public class Tooltip : MonoBehaviour
 {
     public static Tooltip Instance { get; private set; }
 
-    public GameObject tooltip;
+    public RectTransform tooltip;
+    public ContentSizeFitter contentSizeFitter;
     public Text label;
 
     private void Awake()
@@ -18,17 +19,27 @@ public class Tooltip : MonoBehaviour
 
     private void Update()
     {
-        tooltip.transform.position = Input.mousePosition;
+        tooltip.position = Input.mousePosition;
     }
 
     public void Show(Item item)
     {
-        label.text = item.name;
-        tooltip.SetActive(true);
+        label.text = item.itemName;
+
+        if (item is Armor)
+        {
+            Armor armor = (Armor)item;
+
+            label.text += "\n\nDefense: +" + armor.defense;
+            label.text += "\nResistance: +" + armor.resistance;
+        }
+
+        tooltip.gameObject.SetActive(true);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(tooltip);
     }
 
     public void Hide()
     {
-        tooltip.SetActive(false);
+        tooltip.gameObject.SetActive(false);
     }
 }
