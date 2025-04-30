@@ -1463,6 +1463,7 @@ MonoBehaviour:
   - {fileID: 752269246}
   - {fileID: 1799525826}
   itemPrefab: {fileID: 5730659472653786389, guid: 750c40e6af8f7ca41bf1fcf78b2d238c, type: 3}
+  activeArmor: {fileID: 0}
 --- !u!114 &351581399
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2515,7 +2516,6 @@ MonoBehaviour:
   animator: {fileID: 576098806}
   playerCamera: {fileID: 1560936181}
   environmentTemperature: 0
-  clothTemperature: 0.1
 --- !u!114 &576098805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7797,6 +7797,7 @@ GameObject:
   - component: {fileID: 1644947903}
   - component: {fileID: 1644947902}
   - component: {fileID: 1644947904}
+  - component: {fileID: 1644947905}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -7857,6 +7858,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0767da7a494a48e4ebe207759cb2005f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1644947905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644947901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260d3d43fdcf525409863e0b39253853, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  campfires: []
 --- !u!1 &1664625273
 GameObject:
   m_ObjectHideFlags: 0

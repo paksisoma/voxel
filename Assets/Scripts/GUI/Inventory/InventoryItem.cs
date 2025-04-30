@@ -70,6 +70,16 @@ public class InventoryItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         image.raycastTarget = true;
         transform.SetParent(parentAfterDrag);
         slot = transform.GetComponentInParent<InventorySlot>();
+
+        if (item is Armor)
+        {
+            EquipmentSlot equipmentSlot = transform.GetComponentInParent<EquipmentSlot>();
+
+            if (equipmentSlot == null)
+                InventoryManager.Instance.activeArmor = null;
+            else
+                InventoryManager.Instance.activeArmor = (Armor)item;
+        }
     }
 
     public void OnPointerEnter(PointerEventData eventData)

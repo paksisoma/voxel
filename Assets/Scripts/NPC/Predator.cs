@@ -26,7 +26,7 @@ public class Predator : NPC
         if (Vector3.Distance(Player.Instance.transform.position, transform.position) <= attackRange && canHit)
         {
             Player.Instance.movement.AttackEffect(transform.position);
-            Player.Instance.health -= damage;
+            Player.Instance.Damage(damage);
             canHit = false;
         }
 

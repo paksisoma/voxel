@@ -2,19 +2,30 @@ using UnityEngine;
 
 public class Campfire : SpecialObject
 {
-    private float workingDuration = 0f;
+    private float fireDuration = 0f;
     private float maxDuration = 0f;
-    private bool working = false;
+    public bool active = false;
 
     public GameObject fire;
 
+    private void Awake()
+    {
+        CampfireManager.Instance.campfires.Add(this);
+    }
+
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        CampfireManager.Instance.campfires.Remove(this);
+    }
+
     private void Update()
     {
-        if (!working) return;
+        if (!active) return;
 
-        workingDuration += Time.deltaTime;
+        fireDuration += Time.deltaTime;
 
-        if (workingDuration > maxDuration)
+        if (fireDuration > maxDuration)
             Deactivate();
     }
 
@@ -38,14 +49,14 @@ public class Campfire : SpecialObject
 
     private void Activate()
     {
-        working = true;
+        active = true;
         fire.SetActive(true);
     }
 
     private void Deactivate()
     {
-        workingDuration = 0f;
-        working = false;
+        fireDuration = 0f;
+        active = false;
         fire.SetActive(false);
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using static Constants;
 
 [RequireComponent(typeof(CharacterController))]
 public class Player : MonoBehaviour
@@ -14,23 +15,29 @@ public class Player : MonoBehaviour
     public Animator animator;
     public Camera playerCamera;
 
+    private float armorRechargeTimer = 0f;
+
+    public float environmentTemperature = 0f;
+
     private float _health = 1f;
     public float health
     {
         get => _health;
         set
         {
-            if (value <= 0f)
-            {
-                _health = 0f;
-                // TODO: Handle death
-            }
-            else
-            {
-                _health = value;
-            }
-
+            _health = Mathf.Min(1, Mathf.Max(value, 0));
             HudManager.Instance.SetHealth(_health);
+        }
+    }
+
+    private float _armor = 1f;
+    public float armor
+    {
+        get => _armor;
+        set
+        {
+            _armor = Mathf.Min(1, Mathf.Max(value, 0));
+            HudManager.Instance.SetArmor(_armor);
         }
     }
 
@@ -40,7 +47,7 @@ public class Player : MonoBehaviour
         get => _hunger;
         set
         {
-            _hunger = value;
+            _hunger = Mathf.Min(1, Mathf.Max(value, 0));
             HudManager.Instance.SetHunger(value);
         }
     }
@@ -51,7 +58,7 @@ public class Player : MonoBehaviour
         get => _thirst;
         set
         {
-            _thirst = value;
+            _thirst = Mathf.Min(1, Mathf.Max(value, 0));
             HudManager.Instance.SetThirst(value);
         }
     }
@@ -62,8 +69,8 @@ public class Player : MonoBehaviour
         get => _temperature;
         set
         {
-            _temperature = value;
-            HudManager.Instance.SetTemperature(value);
+            _temperature = Mathf.Min(1, Mathf.Max(value, 0));
+            HudManager.Instance.SetTemperature(_temperature);
         }
     }
 
@@ -82,6 +89,57 @@ public class Player : MonoBehaviour
         worldPosition = Vector3Int.RoundToInt(transform.position);
         chunkPosition = Utils.WorldPositionToChunkPosition(worldPosition);
         groundPosition = World.Instance.TryGetGroundPosition(worldPosition, out Vector3Int position) ? position : groundPosition;
+
+        UpdateTemperature();
+        UpdateArmor();
+        UpdateStats();
+    }
+
+    private void UpdateTemperature()
+    {
+        Armor activeArmor = InventoryManager.Instance.activeArmor;
+        float armorResistance = activeArmor ? activeArmor.resistance : 0f;
+
+        float outsideTemperature = Mathf.Max(0f, worldPosition.z) * 0.000025f;
+        temperature += (Mathf.Min(-outsideTemperature + armorResistance, 0f) + environmentTemperature) * Time.deltaTime;
+    }
+
+    private void UpdateArmor()
+    {
+        if (armorRechargeTimer > 0)
+        {
+            armorRechargeTimer -= Time.deltaTime;
+            return;
+        }
+
+        Armor activeArmor = InventoryManager.Instance.activeArmor;
+        armor = activeArmor ? activeArmor.defense : 0f;
+    }
+
+    private void UpdateStats()
+    {
+        hunger += 0.001f * Time.deltaTime;
+        thirst += 0.001f * Time.deltaTime;
+
+        if (temperature <= 0 || hunger >= 1 || thirst >= 1)
+            health -= 0.05f * Time.deltaTime;
+    }
+
+    public void Damage(float value)
+    {
+        float newArmor = armor - value;
+
+        if (newArmor >= 0)
+        {
+            armor = newArmor;
+        }
+        else
+        {
+            armor = 0;
+            health += newArmor;
+        }
+
+        armorRechargeTimer = ARMOR_RECHARGE_DELAY;
     }
 
     public void WarpPlayer(Vector3 worldPosition)

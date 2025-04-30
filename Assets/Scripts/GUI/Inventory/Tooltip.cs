@@ -30,8 +30,8 @@ public class Tooltip : MonoBehaviour
         {
             Armor armor = (Armor)item;
 
-            label.text += "\n\nDefense: +" + armor.defense;
-            label.text += "\nResistance: +" + armor.resistance;
+            label.text += "\n\nDefense: +" + Mathf.Round(armor.defense * 100);
+            label.text += "\nResistance: +" + Mathf.Round(armor.resistance * 100);
         }
 
         tooltip.gameObject.SetActive(true);

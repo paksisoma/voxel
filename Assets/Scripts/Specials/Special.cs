@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class SpecialObject : MonoBehaviour
 {
-    public void OnDestroy()
+    public virtual void OnDestroy()
     {
         Vector3Int worldPosition = Vector3Int.FloorToInt(transform.position);
         World.Instance.RemoveSpecial(worldPosition);

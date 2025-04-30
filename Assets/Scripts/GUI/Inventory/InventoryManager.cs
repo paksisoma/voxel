@@ -19,6 +19,8 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
+    public Armor activeArmor;
+
     private void Awake()
     {
         if (Instance == null)
