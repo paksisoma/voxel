@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Rock
   m_EditorClassIdentifier: 
   item: {fileID: 11400000, guid: dc6e0281dc54f0241a380b05a2c774de, type: 2}
-  quantity: 2
+  quantity: 3

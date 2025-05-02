@@ -9,9 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e086d1244754e6d4fa827dfe8b982b6b, type: 3}
-  m_Name: Axe
+  m_Script: {fileID: 11500000, guid: 2a599a42a6279f7499e0ffcfdd71d2c6, type: 3}
+  m_Name: Ruby Armor
   m_EditorClassIdentifier: 
-  craftInput:
-  - {fileID: 11400000, guid: 40fda0b64c1ce4448a96ceabb42cddb2, type: 2}
-  craftOutput: {fileID: 11400000, guid: 29e728530df485a47bf99df170e75a99, type: 2}
+  item: {fileID: 11400000, guid: 88ff44afd1fe95740a5a9dfcc2f87731, type: 2}
+  quantity: 1
