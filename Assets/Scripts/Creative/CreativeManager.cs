@@ -65,7 +65,7 @@ public class CreativeManager : MonoBehaviour
     {
         movement.speed = defaultSpeed;
         movement.jumpHeight = defaultJumpHeight;
-        World.Instance.renderDistance = Constants.RENDER_DISTANCE;
+        World.Instance.renderDistance = Constants.DEFAULT_RENDER_DISTANCE;
 
         ClearInputs();
     }

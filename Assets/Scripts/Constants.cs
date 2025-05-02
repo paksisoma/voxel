@@ -2,7 +2,6 @@ public static class Constants
 {
     public const byte CHUNK_SIZE = 64;
     public const int CHUNK_HEIGHT = 5;
-    public const byte RENDER_DISTANCE = 3;
     public const byte WATER_HEIGHT = 50;
     public const int CLOUD_HEIGHT = CHUNK_SIZE * 4;
     public const byte HIGHEST_BLOCK = 250;
@@ -15,14 +14,18 @@ public static class Constants
     public const float PREDATOR_SPAWN_RATE = 0.1f;
     public const float PREY_SPAWN_RATE = 0.1f;
 
+    public const float ARMOR_RECHARGE_DELAY = 15f;
+
     public const float INIT_HEALTH = 1f;
     public const float INIT_HUNGER = 0f;
     public const float INIT_THIRST = 0f;
     public const float INIT_TEMPERATURE = 0.5f;
 
-    public const float ARMOR_RECHARGE_DELAY = 15f;
+    public const int DEFAULT_FPS_LIMIT = 60;
+    public const int DEFAULT_RENDER_DISTANCE = 5;
+    public const int DEFAULT_VSYNC = 0;
+    public const int DEFAULT_DISPLAY_MODE = 1;
 
     public const byte CHUNK_SIZE_NO_PADDING = CHUNK_SIZE - 2;
-    public const byte RENDER_DISTANCE_LENGTH = RENDER_DISTANCE * 2 + 1;
     public const byte MIN_CHUNK_HEIGHT = (CHUNK_SIZE + WATER_HEIGHT) / CHUNK_SIZE;
 }

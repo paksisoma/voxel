@@ -51,7 +51,6 @@ public class World : MonoBehaviour
 
         chunks = new Dictionary<Vector2Int, ChunkData>();
         chunkQueue = new List<Vector2Int>();
-        renderDistance = RENDER_DISTANCE;
 
         treeObject = ((Special)Items.Instance.items[106]).gameObject;
         rockObject = ((Special)Items.Instance.items[103]).gameObject;
@@ -65,6 +64,8 @@ public class World : MonoBehaviour
 
     private void Update()
     {
+        renderDistance = Settings.Instance.renderDistance;
+
         if (render)
             return;
 
