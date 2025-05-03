@@ -16,6 +16,8 @@ public static class Constants
 
     public const float ARMOR_RECHARGE_DELAY = 15f;
 
+    public const float PUNCH_DAMAGE = 0.05f;
+
     public const float INIT_HEALTH = 1f;
     public const float INIT_HUNGER = 0f;
     public const float INIT_THIRST = 0f;

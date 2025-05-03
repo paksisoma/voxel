@@ -1,4 +1,5 @@
 using UnityEngine;
+using static Constants;
 
 public class MouseHandler : MonoBehaviour
 {
@@ -102,71 +103,80 @@ public class MouseHandler : MonoBehaviour
     {
         InventoryItem activeItem = InventoryManager.Instance.activeItem;
 
-        if (activeItem == null)
-        {
-            // TODO: Handle no item selected
-        }
+        if (activeItem == null) // No tool selected
+            Player.Instance.animator.SetBool("isPunching", true);
         else
-        {
             if (activeItem.item is Tool) // Tool selected
-                Player.Instance.animator.SetBool("isChopping", true);
-        }
+            Player.Instance.animator.SetBool("isChopping", true);
     }
 
     private void MouseHoldEnd()
     {
         Player.Instance.animator.SetBool("isChopping", false);
+        Player.Instance.animator.SetBool("isPunching", false);
     }
 
     public void Chop()
     {
         InventoryItem activeItem = InventoryManager.Instance.activeItem;
 
-        if (activeItem.item is Tool)
+        if (activeItem)
         {
-            Tool tool = (Tool)activeItem.item;
+            if (activeItem.item is Tool)
+            {
+                Tool tool = (Tool)activeItem.item;
 
+                if (GetHitPointPrefab(out GameObject npcGameObject) && npcGameObject.CompareTag("NPC")) // NPC
+                {
+                    NPC npc = npcGameObject.GetComponent<NPC>();
+                    npc.AttackEffect(Player.Instance.transform.position);
+                    npc.health -= tool.damage;
+                }
+                else // Block
+                {
+                    if (tool.canMine)
+                    {
+                        if (GetHitPointIn(out Vector3Int worldPosition))
+                        {
+                            byte blockID = World.Instance.GetBlock(worldPosition);
+                            Block block = Items.Instance.blocks[blockID];
+
+                            if (block.isMineable)
+                            {
+                                World.Instance.SetBlock(worldPosition, 0);
+                                InventoryManager.Instance.AddItem(blockID);
+                            }
+                        }
+                    }
+                    else if (tool.canDig)
+                    {
+                        if (GetHitPointIn(out Vector3Int worldPosition))
+                        {
+                            byte blockID = World.Instance.GetBlock(worldPosition);
+                            Block block = Items.Instance.blocks[blockID];
+
+                            if (block.isDiggable)
+                            {
+                                World.Instance.SetBlock(worldPosition, 0);
+                                InventoryManager.Instance.AddItem(blockID);
+                            }
+                        }
+                    }
+                    else if (tool.canChop)
+                    {
+                        if (GetHitPointPrefab(out GameObject gameObject) && gameObject.TryGetComponent(out SpecialObject specialObject))
+                            specialObject.Hit();
+                    }
+                }
+            }
+        }
+        else
+        {
             if (GetHitPointPrefab(out GameObject npcGameObject) && npcGameObject.CompareTag("NPC")) // NPC
             {
                 NPC npc = npcGameObject.GetComponent<NPC>();
                 npc.AttackEffect(Player.Instance.transform.position);
-                npc.health -= tool.damage;
-            }
-            else // Block
-            {
-                if (tool.canMine)
-                {
-                    if (GetHitPointIn(out Vector3Int worldPosition))
-                    {
-                        byte blockID = World.Instance.GetBlock(worldPosition);
-                        Block block = Items.Instance.blocks[blockID];
-
-                        if (block.isMineable)
-                        {
-                            World.Instance.SetBlock(worldPosition, 0);
-                            InventoryManager.Instance.AddItem(blockID);
-                        }
-                    }
-                }
-                else if (tool.canDig)
-                {
-                    if (GetHitPointIn(out Vector3Int worldPosition))
-                    {
-                        byte blockID = World.Instance.GetBlock(worldPosition);
-                        Block block = Items.Instance.blocks[blockID];
-
-                        if (block.isDiggable)
-                        {
-                            World.Instance.SetBlock(worldPosition, 0);
-                            InventoryManager.Instance.AddItem(blockID);
-                        }
-                    }
-                }
-                else if (tool.canChop)
-                {
-                    if (GetHitPointPrefab(out GameObject gameObject) && gameObject.TryGetComponent(out SpecialObject specialObject))
-                        specialObject.Hit();
-                }
+                npc.health -= PUNCH_DAMAGE;
             }
         }
     }
