@@ -556,7 +556,7 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 978113297}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.50666666}
+  m_AnchorMin: {x: 0, y: 0.5066667}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
@@ -2708,6 +2708,9 @@ MonoBehaviour:
   - {fileID: 1310663252}
   - {fileID: 752269246}
   - {fileID: 1799525826}
+  - {fileID: 573551605}
+  - {fileID: 1986252367}
+  armorSlot: {fileID: 680123879}
   itemPrefab: {fileID: 5730659472653786389, guid: 750c40e6af8f7ca41bf1fcf78b2d238c, type: 3}
   activeArmor: {fileID: 0}
 --- !u!114 &351581399
@@ -4625,6 +4628,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 54472e13b32929a49b4647cb9dce9d87, type: 3}
+--- !u!114 &573551605 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7967362758672491337, guid: 54472e13b32929a49b4647cb9dce9d87, type: 3}
+  m_PrefabInstance: {fileID: 573551604}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42d8b4c8ed38dcf408d966c8f171114f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &576098803 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 48c35668324f9774886ff933a391e211, type: 3}
@@ -14480,6 +14494,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 54472e13b32929a49b4647cb9dce9d87, type: 3}
+--- !u!114 &1986252367 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7967362758672491337, guid: 54472e13b32929a49b4647cb9dce9d87, type: 3}
+  m_PrefabInstance: {fileID: 1986252366}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42d8b4c8ed38dcf408d966c8f171114f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &1997340688 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3568525767724017143, guid: 54472e13b32929a49b4647cb9dce9d87, type: 3}
@@ -14713,7 +14738,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 69631924}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.49333337
+  m_Size: 0.49333328
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

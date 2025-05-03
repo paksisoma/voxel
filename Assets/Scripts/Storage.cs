@@ -101,7 +101,7 @@ public static class Storage
         File.Create(characterPath).Close();
 
         SetWorld(new StorageWorld(Application.version, Application.unityVersion, seed, 0)); // Init map data
-        SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, 0, 0, new List<StorageInventory>())); // Init character data
+        SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, 0, 0, 0, new List<StorageItem>())); // Init character data
     }
 
     public static void SaveBlocks(Vector3Int chunkPosition, List<StorageBlockData> blocks)
@@ -368,11 +368,13 @@ public static class Storage
             writer.Write(character.yaw); // Yaw
             writer.Write(character.pitch); // Pitch
 
+            writer.Write(character.armor); // Armor
+
             // Inventory
-            foreach (StorageInventory item in character.inventory)
+            foreach (StorageItem item in character.inventory)
             {
-                writer.Write(item.index); // Index
-                writer.Write(item.type); // Type
+                writer.Write(item.slot); // Slot
+                writer.Write(item.id); // ID
                 writer.Write(item.quantity); // Quantity
             }
         }
@@ -393,18 +395,20 @@ public static class Storage
             float yaw = reader.ReadSingle(); // Yaw
             float pitch = reader.ReadSingle(); // Pitch
 
-            List<StorageInventory> inventory = new List<StorageInventory>();
+            byte armor = reader.ReadByte(); // Armor
+
+            List<StorageItem> inventory = new List<StorageItem>();
 
             while (reader.BaseStream.Position < reader.BaseStream.Length)
             {
-                byte index = reader.ReadByte(); // Index
-                byte type = reader.ReadByte(); // Type
+                byte slot = reader.ReadByte(); // Slot
+                byte id = reader.ReadByte(); // ID
                 byte quantity = reader.ReadByte(); // Quantity
 
-                inventory.Add(new StorageInventory(index, type, quantity)); // Add item to inventory
+                inventory.Add(new StorageItem(slot, id, quantity)); // Add item to inventory
             }
 
-            return new StorageCharacter(health, thirst, hunger, temperature, new Vector3(x, y, z), rotation, yaw, pitch, inventory); // Return character data
+            return new StorageCharacter(health, thirst, hunger, temperature, new Vector3(x, y, z), rotation, yaw, pitch, armor, inventory); // Return character data
         }
     }
 
@@ -457,16 +461,16 @@ public struct StorageSpecialData
     }
 }
 
-public struct StorageInventory
+public struct StorageItem
 {
-    public byte index;
-    public byte type;
+    public byte slot;
+    public byte id;
     public byte quantity;
 
-    public StorageInventory(byte index, byte type, byte quantity)
+    public StorageItem(byte slot, byte id, byte quantity)
     {
-        this.index = index;
-        this.type = type;
+        this.slot = slot;
+        this.id = id;
         this.quantity = quantity;
     }
 }
@@ -481,9 +485,10 @@ public struct StorageCharacter
     public float rotation;
     public float yaw;
     public float pitch;
-    public List<StorageInventory> inventory;
+    public byte armor;
+    public List<StorageItem> inventory;
 
-    public StorageCharacter(float health, float thirst, float hunger, float temperature, Vector3 position, float rotation, float yaw, float pitch, List<StorageInventory> inventory)
+    public StorageCharacter(float health, float thirst, float hunger, float temperature, Vector3 position, float rotation, float yaw, float pitch, byte armor, List<StorageItem> inventory)
     {
         this.health = health;
         this.thirst = thirst;
@@ -493,6 +498,7 @@ public struct StorageCharacter
         this.rotation = rotation;
         this.yaw = yaw;
         this.pitch = pitch;
+        this.armor = armor;
         this.inventory = inventory;
     }
 }

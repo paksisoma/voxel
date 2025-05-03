@@ -142,6 +142,13 @@ public class World : MonoBehaviour
         storageCharacter.yaw = ThirdPersonCamera.Instance.yaw;
         storageCharacter.pitch = ThirdPersonCamera.Instance.pitch;
 
+        if (InventoryManager.Instance.activeArmor == null)
+            storageCharacter.armor = 0;
+        else
+            storageCharacter.armor = InventoryManager.Instance.activeArmor.itemID;
+
+        storageCharacter.inventory = InventoryManager.Instance.GetStorageItems();
+
         Storage.SetCharacter(storageCharacter);
     }
 
@@ -158,6 +165,14 @@ public class World : MonoBehaviour
 
         ThirdPersonCamera.Instance.yaw = storageCharacter.yaw;
         ThirdPersonCamera.Instance.pitch = storageCharacter.pitch;
+
+        if (storageCharacter.armor != 0)
+            InventoryManager.Instance.AddArmor(storageCharacter.armor);
+
+        ThirdPersonCamera.Instance.pitch = storageCharacter.pitch;
+
+        foreach (StorageItem item in storageCharacter.inventory)
+            InventoryManager.Instance.AddItem(item.id, item.slot, item.quantity);
     }
 
     // It doesn't remove the chunk from the dictionary, only destroy the chunks
