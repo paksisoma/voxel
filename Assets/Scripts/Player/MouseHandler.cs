@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using static Constants;
 
 public class MouseHandler : MonoBehaviour
@@ -11,6 +12,9 @@ public class MouseHandler : MonoBehaviour
     private bool isMouseDown = false;
     private bool isHolding = false;
 
+    private float waterTimer = 0f;
+    public Text interact;
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -18,6 +22,34 @@ public class MouseHandler : MonoBehaviour
 
     private void Update()
     {
+        // Drink water
+        if (waterTimer > 0f)
+        {
+            waterTimer -= Time.deltaTime;
+        }
+
+        if (GetHitPointIn(out Vector3Int worldPosition) && World.Instance.GetBlock(worldPosition) == 3)
+        {
+            if (waterTimer <= 0)
+            {
+                if (Input.GetKeyDown("e") && waterTimer <= 0)
+                {
+                    waterTimer = 2f;
+                    Player.Instance.thirst -= 0.1f;
+                }
+
+                interact.text = "Press E to drink";
+            }
+            else
+            {
+                interact.text = waterTimer.ToString("F1") + " seconds until you can drink again";
+            }
+        }
+        else
+        {
+            interact.text = "";
+        }
+
         if (ContainerManager.Instance.panel.activeSelf)
         {
             if (isHolding)
