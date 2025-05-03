@@ -48,7 +48,7 @@ public class Player : MonoBehaviour
         set
         {
             _hunger = Mathf.Min(1, Mathf.Max(value, 0));
-            HudManager.Instance.SetHunger(value);
+            HudManager.Instance.SetHunger(_hunger);
         }
     }
 
@@ -59,7 +59,7 @@ public class Player : MonoBehaviour
         set
         {
             _thirst = Mathf.Min(1, Mathf.Max(value, 0));
-            HudManager.Instance.SetThirst(value);
+            HudManager.Instance.SetThirst(_thirst);
         }
     }
 
@@ -123,6 +123,8 @@ public class Player : MonoBehaviour
 
         if (temperature <= 0 || hunger >= 1 || thirst >= 1)
             health -= 0.05f * Time.deltaTime;
+        else
+            health += 0.005f * Time.deltaTime;
     }
 
     public void Damage(float value)

@@ -48,31 +48,43 @@ public class InventorySlot : MonoBehaviour, IDropHandler, IPointerClickHandler
         if (eventData.button != PointerEventData.InputButton.Left)
             return;
 
-        InventoryItem item = transform.GetComponentInChildren<InventoryItem>();
+        InventoryItem inventoryItem = transform.GetComponentInChildren<InventoryItem>();
 
-        if (item != null)
+        if (inventoryItem != null)
         {
-            if (item.active)
+            if (inventoryItem.item is Food) // Food
             {
-                item.active = false;
-                ChangeSprite(false);
-                InventoryManager.Instance.activeItem = null;
+                Food food = (Food)inventoryItem.item;
+
+                Player.Instance.hunger -= food.hungerValue;
+
+                inventoryItem.quantity--;
+                inventoryItem.UpdateQuantity();
             }
-            else
+            else // Other
             {
-                InventoryItem activeItem = InventoryManager.Instance.activeItem;
-
-                // Deselect already selected item
-                if (activeItem != null)
+                if (inventoryItem.active)
                 {
-                    activeItem.active = false;
-                    activeItem.slot.ChangeSprite(false);
+                    inventoryItem.active = false;
+                    ChangeSprite(false);
+                    InventoryManager.Instance.activeItem = null;
                 }
+                else
+                {
+                    InventoryItem activeItem = InventoryManager.Instance.activeItem;
 
-                // Select selected item
-                item.active = true;
-                ChangeSprite(true);
-                InventoryManager.Instance.activeItem = item;
+                    // Deselect already selected item
+                    if (activeItem != null)
+                    {
+                        activeItem.active = false;
+                        activeItem.slot.ChangeSprite(false);
+                    }
+
+                    // Select selected item
+                    inventoryItem.active = true;
+                    ChangeSprite(true);
+                    InventoryManager.Instance.activeItem = inventoryItem;
+                }
             }
         }
     }
