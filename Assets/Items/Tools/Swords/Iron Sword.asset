@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b90797488694cd47a3975cb7eecd962, type: 3}
+  m_Name: Iron Sword
+  m_EditorClassIdentifier: 
+  itemName: Sword
+  itemID: 150
+  itemImage: {fileID: 21300000, guid: 982329d1733788f4bb69f46b96229ccc, type: 3}
+  stackable: 0
+  model: {fileID: 919132149155446097, guid: 1ebdcb576963ecb478f80bd9834c294f, type: 3}
+  canMine: 0
+  canDig: 0
+  canChop: 0
+  damage: 0.1
