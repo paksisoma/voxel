@@ -15,6 +15,8 @@ public class Player : MonoBehaviour
     public Animator animator;
     public Camera playerCamera;
 
+    public GameObject gameOverMenu;
+
     private float armorRechargeTimer = 0f;
 
     public float environmentTemperature = 0f;
@@ -27,6 +29,10 @@ public class Player : MonoBehaviour
         {
             _health = Mathf.Min(1, Mathf.Max(value, 0));
             HudManager.Instance.SetHealth(_health);
+
+            // Game over
+            if (_health <= 0)
+                GameOver.Instance.Show();
         }
     }
 
@@ -93,6 +99,9 @@ public class Player : MonoBehaviour
         UpdateTemperature();
         UpdateArmor();
         UpdateStats();
+
+        if (chunkPosition.y < 0)
+            WarpPlayerUp(new Vector2(worldPosition.x, worldPosition.z));
     }
 
     private void UpdateTemperature()
