@@ -11,6 +11,12 @@ public static class Constants
     public const int SNOW_BIOME_TRANSITION_END = 550;
     public const int TREE_DENSITY = 7;
 
+    public const int IRON_START_POSITION = 0;
+    public const int COPPER_START_POSITION = 2000;
+    public const int GOLD_START_POSITION = 4000;
+    public const int RUBY_START_POSITION = 6000;
+    public const int DIAMOND_START_POSITION = 8000;
+
     public const float PREDATOR_SPAWN_RATE = 0.1f;
     public const float PREY_SPAWN_RATE = 0.1f;
 

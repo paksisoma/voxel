@@ -424,25 +424,36 @@ public class World : MonoBehaviour
                     }
                 }
 
+                void AddMineral()
+                {
+                    int blockPositionZ = worldPosition.y + z;
+
+                    if (blockPositionZ > DIAMOND_START_POSITION)
+                        chunk.AddSolid(x, height - 1, z, 12);
+                    else if (blockPositionZ > RUBY_START_POSITION)
+                        chunk.AddSolid(x, height - 1, z, 10);
+                    else if (blockPositionZ > GOLD_START_POSITION)
+                        chunk.AddSolid(x, height - 1, z, 11);
+                    else if (blockPositionZ > COPPER_START_POSITION)
+                        chunk.AddSolid(x, height - 1, z, 9);
+                    else if (blockPositionZ > IRON_START_POSITION)
+                        chunk.AddSolid(x, height - 1, z, 8);
+                    else
+                        chunk.AddSolid(x, height - 1, z, 7);
+                }
+
                 if (snowBiome) // Snow biome
                 {
                     if (terrainMap[j] < WATER_HEIGHT)
                         chunk.AddSolid(x, height - 1, z, 6); // Dirt
                     else
                     {
-                        if (terrainMap[j] > MOUNTAIN_TRANSITION_END) // Mountain
+                        if (terrainMap[j] > MOUNTAIN_TRANSITION_START) // Mountain
                         {
                             if (noiseMap[j] > 0.05f)
-                            {
                                 chunk.AddSolid(x, height - 1, z, 5);
-                            }
                             else
-                            {
-                                if (noiseMap2[j] > 0.5f)
-                                    chunk.AddSolid(x, height - 1, z, 7);
-                                else
-                                    chunk.AddSolid(x, height - 1, z, 8);
-                            }
+                                AddMineral();
                         }
                         else
                         {
@@ -458,28 +469,28 @@ public class World : MonoBehaviour
                     }
                     else if (terrainMap[j] > MOUNTAIN_TRANSITION_START) // Mountain
                     {
-                        if (terrainMap[j] > MOUNTAIN_TRANSITION_END) // Stone
+                        if (terrainMap[j] > MOUNTAIN_TRANSITION_END)
                         {
                             if (noiseMap[j] > 0.05f)
-                            {
                                 chunk.AddSolid(x, height - 1, z, 2);
-                            }
                             else
-                            {
-                                if (noiseMap2[j] > 0.5f)
-                                    chunk.AddSolid(x, height - 1, z, 7);
-                                else
-                                    chunk.AddSolid(x, height - 1, z, 8);
-                            }
+                                AddMineral();
                         }
                         else // Grass, stone transition
                         {
                             float transitionValue = (MOUNTAIN_TRANSITION_END - terrainMap[j]) / (float)(MOUNTAIN_TRANSITION_END - MOUNTAIN_TRANSITION_START);
 
                             if (noiseMap[j] > transitionValue)
-                                chunk.AddSolid(x, height - 1, z, 2);
+                            {
+                                if (noiseMap[j] > 0.05f)
+                                    chunk.AddSolid(x, height - 1, z, 2);
+                                else
+                                    AddMineral();
+                            }
                             else
+                            {
                                 chunk.AddSolid(x, height - 1, z, 1);
+                            }
                         }
                     }
                     else // Grass
