@@ -39,6 +39,9 @@ public class Campfire : SpecialObject
             activeItem.UpdateQuantity();
             maxDuration += 5f;
             Activate();
+
+            // Tutorial
+            TutorialManager.Instance.NextTask(10);
         }
     }
 

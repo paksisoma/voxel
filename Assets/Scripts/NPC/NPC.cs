@@ -51,7 +51,14 @@ public class NPC : MonoBehaviour
             _health = value;
 
             if (_health <= 0f)
+            {
                 Destroy(transform.gameObject);
+
+                InventoryManager.Instance.AddItem(200);
+
+                // Tutorial
+                TutorialManager.Instance.NextTask(13);
+            }
         }
     }
 
@@ -196,12 +203,12 @@ public class NPC : MonoBehaviour
         controller.Move(velocity);
 
         // Debug
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         if (pathList == null || pathList.Count < 2) return;
 
         for (int i = 0; i < pathList.Count - 1; i++)
             Debug.DrawLine(pathList[i], pathList[i + 1], Color.green);
-        #endif
+#endif
     }
 
     public void SetGoal(Vector3Int goalPosition)

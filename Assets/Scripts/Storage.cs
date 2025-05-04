@@ -100,7 +100,7 @@ public static class Storage
         characterPath = path + "/character.bin";
         File.Create(characterPath).Close();
 
-        SetWorld(new StorageWorld(Application.version, Application.unityVersion, seed, 0, INIT_TIME)); // Init map data
+        SetWorld(new StorageWorld(Application.version, Application.unityVersion, seed, 0, INIT_TIME, 0)); // Init map data
         SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, 0, 0, 0, new List<StorageItem>())); // Init character data
     }
 
@@ -420,7 +420,8 @@ public static class Storage
             writer.Write(map.version); // Version
             writer.Write(map.seed); // Seed
             writer.Write(map.visit); // Visit
-            writer.Write(map.time); // time
+            writer.Write(map.time); // Time
+            writer.Write(map.task); // Task
         }
     }
 
@@ -433,8 +434,9 @@ public static class Storage
             uint seed = reader.ReadUInt32(); // Seed
             uint visit = reader.ReadUInt32(); // Visit
             float time = reader.ReadSingle(); // Time
+            byte task = reader.ReadByte(); // Task
 
-            return new StorageWorld(unityVersion, version, seed, visit, time); // Return map data
+            return new StorageWorld(unityVersion, version, seed, visit, time, task); // Return map data
         }
     }
 }
@@ -512,14 +514,16 @@ public struct StorageWorld
     public uint seed;
     public uint visit;
     public float time;
+    public byte task;
 
-    public StorageWorld(string version, string unityVersion, uint seed, uint visit, float time)
+    public StorageWorld(string version, string unityVersion, uint seed, uint visit, float time, byte task)
     {
         this.version = version;
         this.unityVersion = unityVersion;
         this.seed = seed;
         this.visit = visit;
         this.time = time;
+        this.task = task;
     }
 }
 

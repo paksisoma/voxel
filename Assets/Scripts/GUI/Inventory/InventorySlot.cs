@@ -60,6 +60,9 @@ public class InventorySlot : MonoBehaviour, IDropHandler, IPointerClickHandler
 
                 inventoryItem.quantity--;
                 inventoryItem.UpdateQuantity();
+
+                // Tutorial
+                TutorialManager.Instance.NextTask(14);
             }
             else // Other
             {

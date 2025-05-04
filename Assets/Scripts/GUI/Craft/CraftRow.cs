@@ -64,5 +64,15 @@ public class CraftRow : MonoBehaviour, IPointerClickHandler
             InventoryManager.Instance.AddItem(craftable.craftOutput.item);
 
         CraftManager.Instance.UpdateRows(); // Update craft menu
+
+        // Tutorial
+        if (TutorialManager.Instance.currentTask == 7 && craftable.craftOutput.item.itemID == 105)
+            TutorialManager.Instance.NextTask(8);
+
+        if (TutorialManager.Instance.currentTask == 10 && craftable.craftOutput.item.itemID == 100)
+            TutorialManager.Instance.NextTask(11);
+
+        if (TutorialManager.Instance.currentTask == 18 && craftable.craftOutput.item is Armor)
+            TutorialManager.Instance.NextTask(19);
     }
 }

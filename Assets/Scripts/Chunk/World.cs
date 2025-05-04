@@ -122,6 +122,7 @@ public class World : MonoBehaviour
     private void SaveWorld()
     {
         storageWorld.time = TimeCycle.Instance.rotation;
+        storageWorld.task = TutorialManager.Instance.currentTask;
         Storage.SetWorld(storageWorld);
     }
 
@@ -130,6 +131,7 @@ public class World : MonoBehaviour
         storageWorld = Storage.GetWorld();
         Seed.seed = storageWorld.seed;
         TimeCycle.Instance.rotation = storageWorld.time;
+        TutorialManager.Instance.currentTask = storageWorld.task;
     }
 
     private void SaveCharacter()

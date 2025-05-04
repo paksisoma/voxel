@@ -35,7 +35,12 @@ public class Tree : SpecialObject
         health -= damage;
 
         if (health <= 0)
+        {
             Destroy(transform.gameObject);
+
+            // Tutorial
+            TutorialManager.Instance.NextTask(12);
+        }
     }
 
     public void ChopTree()

@@ -36,6 +36,9 @@ public class MouseHandler : MonoBehaviour
                 {
                     waterTimer = 2f;
                     Player.Instance.thirst -= 0.1f;
+
+                    // Tutorial
+                    TutorialManager.Instance.NextTask(15);
                 }
 
                 interact.text = "Press E to drink";
@@ -110,16 +113,25 @@ public class MouseHandler : MonoBehaviour
 
                         activeItem.quantity--;
                         activeItem.UpdateQuantity();
+
+                        // Tutorial
+                        TutorialManager.Instance.NextTask(17);
                     }
                 }
                 else if (activeItem.item is Special) // Special selected
                 {
                     if (GetHitPointOut(out worldPosition))
                     {
-                        World.Instance.AddSpecial(worldPosition, (Special)activeItem.item);
+                        Special specialItem = (Special)activeItem.item;
+
+                        World.Instance.AddSpecial(worldPosition, specialItem);
 
                         activeItem.quantity--;
                         activeItem.UpdateQuantity();
+
+                        // Tutorial
+                        if (TutorialManager.Instance.currentTask == 8 && specialItem.itemID == 105)
+                            TutorialManager.Instance.NextTask(9);
                     }
                 }
             }
@@ -128,6 +140,16 @@ public class MouseHandler : MonoBehaviour
         {
             if (special.TryGetComponent(out SpecialObject specialObject))
                 specialObject.Click();
+
+            // Tutorial
+            if (TutorialManager.Instance.currentTask == 6)
+            {
+                int stickQuantity = InventoryManager.Instance.CountItemsQuantity(Items.Instance.items[104]);
+                int rockQuantity = InventoryManager.Instance.CountItemsQuantity(Items.Instance.items[103]);
+
+                if (stickQuantity > 0 && rockQuantity > 0)
+                    TutorialManager.Instance.NextTask(7);
+            }
         }
     }
 
@@ -140,6 +162,8 @@ public class MouseHandler : MonoBehaviour
         else
             if (activeItem.item is Tool) // Tool selected
             Player.Instance.animator.SetBool("isChopping", true);
+
+        TutorialManager.Instance.NextTask(6);
     }
 
     private void MouseHoldEnd()
@@ -177,6 +201,10 @@ public class MouseHandler : MonoBehaviour
                             {
                                 World.Instance.SetBlock(worldPosition, 0);
                                 InventoryManager.Instance.AddItem(blockID);
+
+                                // Tutorial
+                                if (activeItem.item.itemID != 2)
+                                    TutorialManager.Instance.NextTask(18);
                             }
                         }
                     }
@@ -191,6 +219,9 @@ public class MouseHandler : MonoBehaviour
                             {
                                 World.Instance.SetBlock(worldPosition, 0);
                                 InventoryManager.Instance.AddItem(blockID);
+
+                                // Tutorial
+                                TutorialManager.Instance.NextTask(16);
                             }
                         }
                     }

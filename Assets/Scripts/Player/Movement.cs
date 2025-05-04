@@ -107,6 +107,30 @@ public class Movement : MonoBehaviour
             Player.Instance.animator.SetBool("isRunning", false);
         }
 
+        // Tutorial
+        if (TutorialManager.Instance.currentTask < 5)
+        {
+            // Forward
+            if (vertical > 0.5f)
+                TutorialManager.Instance.NextTask(1);
+
+            // Backward
+            if (vertical < -0.5f)
+                TutorialManager.Instance.NextTask(2);
+
+            // Left
+            if (horizontal < -0.5f)
+                TutorialManager.Instance.NextTask(3);
+
+            // Right
+            if (horizontal > 0.5f)
+                TutorialManager.Instance.NextTask(4);
+
+            // Jump
+            if (verticalVelocity > 0.5f)
+                TutorialManager.Instance.NextTask(5);
+        }
+
         Vector3 velocity = (moveDirection.normalized * speed + Vector3.up * verticalVelocity + additionalVelocity) * Time.deltaTime;
         Player.Instance.controller.Move(velocity);
     }
