@@ -28,6 +28,7 @@ public static class Constants
     public const float INIT_HUNGER = 0f;
     public const float INIT_THIRST = 0f;
     public const float INIT_TEMPERATURE = 0.5f;
+    public const float INIT_TIME = 45f;
 
     public const int DEFAULT_FPS_LIMIT = 60;
     public const int DEFAULT_RENDER_DISTANCE = 5;

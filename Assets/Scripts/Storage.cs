@@ -100,7 +100,7 @@ public static class Storage
         characterPath = path + "/character.bin";
         File.Create(characterPath).Close();
 
-        SetWorld(new StorageWorld(Application.version, Application.unityVersion, seed, 0)); // Init map data
+        SetWorld(new StorageWorld(Application.version, Application.unityVersion, seed, 0, INIT_TIME)); // Init map data
         SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, 0, 0, 0, new List<StorageItem>())); // Init character data
     }
 
@@ -420,6 +420,7 @@ public static class Storage
             writer.Write(map.version); // Version
             writer.Write(map.seed); // Seed
             writer.Write(map.visit); // Visit
+            writer.Write(map.time); // time
         }
     }
 
@@ -431,8 +432,9 @@ public static class Storage
             string version = reader.ReadString(); // Version
             uint seed = reader.ReadUInt32(); // Seed
             uint visit = reader.ReadUInt32(); // Visit
+            float time = reader.ReadSingle(); // Time
 
-            return new StorageWorld(unityVersion, version, seed, visit); // Return map data
+            return new StorageWorld(unityVersion, version, seed, visit, time); // Return map data
         }
     }
 }
@@ -509,13 +511,15 @@ public struct StorageWorld
     public string unityVersion;
     public uint seed;
     public uint visit;
+    public float time;
 
-    public StorageWorld(string version, string unityVersion, uint seed, uint visit)
+    public StorageWorld(string version, string unityVersion, uint seed, uint visit, float time)
     {
         this.version = version;
         this.unityVersion = unityVersion;
         this.seed = seed;
         this.visit = visit;
+        this.time = time;
     }
 }
 

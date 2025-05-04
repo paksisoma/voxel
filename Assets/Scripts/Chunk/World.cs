@@ -121,6 +121,7 @@ public class World : MonoBehaviour
 
     private void SaveWorld()
     {
+        storageWorld.time = TimeCycle.Instance.rotation;
         Storage.SetWorld(storageWorld);
     }
 
@@ -128,6 +129,7 @@ public class World : MonoBehaviour
     {
         storageWorld = Storage.GetWorld();
         Seed.seed = storageWorld.seed;
+        TimeCycle.Instance.rotation = storageWorld.time;
     }
 
     private void SaveCharacter()
