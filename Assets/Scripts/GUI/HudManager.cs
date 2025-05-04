@@ -16,6 +16,8 @@ public class HudManager : MonoBehaviour
     private float hungerMaxWidth;
     private float temperatureMaxHeight;
 
+    public RectTransform compassTransform;
+
     private void Awake()
     {
         if (Instance == null)
@@ -28,6 +30,11 @@ public class HudManager : MonoBehaviour
         thirstMaxWidth = thirstTransform.rect.width;
         hungerMaxWidth = hungerTransform.rect.width;
         temperatureMaxHeight = temperatureTransform.rect.height;
+    }
+
+    private void Update()
+    {
+        compassTransform.rotation = Quaternion.Euler(0, 0, ThirdPersonCamera.Instance.yaw);
     }
 
     public void SetHealth(float percent)
