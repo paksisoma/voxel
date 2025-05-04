@@ -187,6 +187,11 @@ public static class Storage
         }
     }
 
+    public static bool HasBlocks(Vector3Int chunkPosition)
+    {
+        return blocksSeek.ContainsKey(chunkPosition);
+    }
+
     public static List<StorageBlockData> GetBlocks(Vector3Int chunkPosition)
     {
         List<StorageBlockData> blocks = new List<StorageBlockData>();

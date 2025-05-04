@@ -594,12 +594,16 @@ public class World : MonoBehaviour
             if (chunk != null)
             {
                 Vector3Int currentChunkPosition = new Vector3Int(chunkPosition.x, i, chunkPosition.y);
-                List<StorageBlockData> blocks = Storage.GetBlocks(currentChunkPosition);
 
-                foreach (StorageBlockData block in blocks)
+                if (Storage.HasBlocks(currentChunkPosition))
                 {
-                    chunk.SetBlock(block.position.x, block.position.y, block.position.z, block.type);
-                    Vector3Int blockPosition = new Vector3Int(block.position.x, block.position.y, block.position.z);
+                    List<StorageBlockData> blocks = Storage.GetBlocks(currentChunkPosition);
+
+                    foreach (StorageBlockData block in blocks)
+                    {
+                        chunk.SetBlock(block.position.x, block.position.y, block.position.z, block.type);
+                        Vector3Int blockPosition = new Vector3Int(block.position.x, block.position.y, block.position.z);
+                    }
                 }
 
                 chunk.UpdateMesh();
