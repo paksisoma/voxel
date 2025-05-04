@@ -685,6 +685,7 @@ public class World : MonoBehaviour
         gameObject.transform.position = worldPosition;
         gameObject.transform.SetParent(cloudParent.transform);
         gameObject.isStatic = true;
+        gameObject.layer = 2;
 
         MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
         MeshRenderer meshRenderer = gameObject.AddComponent<MeshRenderer>();

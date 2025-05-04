@@ -15,6 +15,13 @@ public class MouseHandler : MonoBehaviour
     private float waterTimer = 0f;
     public Text interact;
 
+    private int layerMask;
+
+    private void Awake()
+    {
+        layerMask = ~((1 << LayerMask.NameToLayer("Player")) | (1 << LayerMask.NameToLayer("Ignore Raycast")));
+    }
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -251,7 +258,7 @@ public class MouseHandler : MonoBehaviour
         Ray ray = playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, 50))
+        if (Physics.Raycast(ray, out hit, 50, layerMask))
         {
             Vector3Int hitPosition = Vector3Int.RoundToInt(hit.point - hit.normal * 0.5f);
 
@@ -272,7 +279,7 @@ public class MouseHandler : MonoBehaviour
         Ray ray = playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, 50))
+        if (Physics.Raycast(ray, out hit, 50, layerMask))
         {
             Vector3Int hitPosition = Vector3Int.RoundToInt(hit.point + hit.normal * 0.5f);
 
@@ -293,7 +300,7 @@ public class MouseHandler : MonoBehaviour
         Ray ray = playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, 50))
+        if (Physics.Raycast(ray, out hit, 50, layerMask))
         {
             if (Vector3.Distance(Player.Instance.worldPosition, hit.transform.position) <= maxDistance)
             {
