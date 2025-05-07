@@ -16,5 +16,5 @@ MonoBehaviour:
   itemID: 110
   itemImage: {fileID: 21300000, guid: e6a3b9fe8f88bc941b3573e837b3866f, type: 3}
   stackable: 0
-  defense: 0
-  resistance: 0
+  defense: 0.2
+  resistance: 0.1
