@@ -75,7 +75,7 @@ public class TimeCycle : MonoBehaviour
         }
     }
 
-    public void ChangeTime(float rotation)
+    public void SetTime(float rotation)
     {
         ChangeDay(rotation <= 180f, true);
         this.rotation = rotation;

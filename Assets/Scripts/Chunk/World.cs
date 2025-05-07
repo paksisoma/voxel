@@ -130,7 +130,7 @@ public class World : MonoBehaviour
     {
         storageWorld = Storage.GetWorld();
         Seed.seed = storageWorld.seed;
-        TimeCycle.Instance.ChangeTime(storageWorld.time);
+        TimeCycle.Instance.SetTime(storageWorld.time);
         TutorialManager.Instance.currentTask = storageWorld.task;
 
         storageWorld.visit++;
