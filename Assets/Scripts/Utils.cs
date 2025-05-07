@@ -21,8 +21,10 @@ public static class Utils
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int ManhattanDistance(Vector3Int a, Vector3Int b)
+    public static float CalculateDistance(Vector3Int from, Vector3Int to)
     {
-        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) + Mathf.Abs(a.z - b.z);
+        float dx = from.x - to.x;
+        float dz = from.z - to.z;
+        return Mathf.Sqrt(dx * dx + dz * dz);
     }
 }

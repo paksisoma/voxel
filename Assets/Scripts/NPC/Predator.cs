@@ -17,17 +17,22 @@ public class Predator : NPC
     {
         base.Update();
 
-        if (Vector3.Distance(Player.Instance.transform.position, transform.position) <= detectRange)
-            follow = true;
+        float playerDistance = Vector3.Distance(Player.Instance.transform.position, transform.position);
 
-        if (Vector3.Distance(Player.Instance.transform.position, transform.position) > chaseRange)
-            follow = false;
-
-        if (Vector3.Distance(Player.Instance.transform.position, transform.position) <= attackRange && canHit)
+        if (playerDistance <= attackRange && canHit)
         {
             Player.Instance.movement.AttackEffect(transform.position);
             Player.Instance.Damage(damage);
             canHit = false;
+        }
+        else if (playerDistance <= detectRange)
+        {
+            follow = true;
+        }
+        else if (playerDistance > chaseRange)
+        {
+            follow = false;
+            ClearPath();
         }
 
         if (canHit == false)

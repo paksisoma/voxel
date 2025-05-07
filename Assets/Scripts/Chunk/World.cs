@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using Priority;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
@@ -892,10 +893,7 @@ public class World : MonoBehaviour
     {
         path = new List<Vector3Int>();
 
-        if (!IsValidChunk(WorldPositionToChunkPosition(startPosition)) || !IsGround(startPosition))
-            return false;
-
-        if (!IsValidChunk(WorldPositionToChunkPosition(startPosition)) || !IsGround(endPosition))
+        if (!IsValidChunk(WorldPositionToChunkPosition(startPosition)) || !IsGround(startPosition) || !IsValidChunk(WorldPositionToChunkPosition(endPosition)) || !IsGround(endPosition))
             return false;
 
         Node startNode = new Node
@@ -903,23 +901,21 @@ public class World : MonoBehaviour
             Position = startPosition,
             Parent = null,
             G = 0,
-            H = ManhattanDistance(startPosition, endPosition)
+            H = CalculateDistance(startPosition, endPosition)
         };
 
         startNode.F = startNode.G + startNode.H;
 
-        List<Node> openList = new List<Node> { startNode };
+        PriorityQueue<Node, float> openList = new PriorityQueue<Node, float>();
+        openList.Enqueue(startNode, startNode.F);
+
         HashSet<Vector3Int> closedSet = new HashSet<Vector3Int>();
-        Dictionary<Vector3, Node> nodeDict = new Dictionary<Vector3, Node>() {
-            { startNode.Position, startNode }
-        };
+        Dictionary<Vector3Int, Node> nodeDict = new Dictionary<Vector3Int, Node> { { startNode.Position, startNode } };
 
         while (openList.Count > 0)
         {
-            // Shortest F node
-            Node current = openList.OrderBy(n => n.F).First();
+            Node current = openList.Dequeue();
 
-            // Found end position
             if (current.Position == endPosition)
             {
                 Node node = current;
@@ -930,20 +926,16 @@ public class World : MonoBehaviour
                     node = node.Parent;
                 }
 
-                break;
+                path.Reverse();
+                return true;
             }
 
-            // Swap current node from open to closed
-            openList.Remove(current);
             closedSet.Add(current.Position);
+            float g = current.G + 1;
 
-            int g = current.G + 1;
-
-            // Check neighbours
             foreach (Vector3Int position in GetNeighbourBlocks(current.Position))
             {
-                // If already exist
-                if (closedSet.Contains(position))
+                if (closedSet.Contains(position) || !IsGround(position))
                     continue;
 
                 if (nodeDict.TryGetValue(position, out Node node))
@@ -952,8 +944,9 @@ public class World : MonoBehaviour
                     {
                         node.Parent = current;
                         node.G = g;
-                        node.H = ManhattanDistance(position, endPosition);
+                        node.H = CalculateDistance(position, endPosition);
                         node.F = node.G + node.H;
+                        openList.Enqueue(node, node.F);
                     }
                 }
                 else
@@ -963,20 +956,17 @@ public class World : MonoBehaviour
                         Position = position,
                         Parent = current,
                         G = g,
-                        H = ManhattanDistance(position, endPosition)
+                        H = CalculateDistance(position, endPosition)
                     };
 
                     node.F = node.G + node.H;
-
-                    openList.Add(node);
-                    nodeDict.TryAdd(position, node);
+                    nodeDict[position] = node;
+                    openList.Enqueue(node, node.F);
                 }
             }
         }
 
-        path.Reverse();
-
-        return true;
+        return false;
     }
 
     public struct ChunkData

@@ -4,7 +4,7 @@ public class Node
 {
     public Vector3Int Position { get; set; }
     public Node Parent { get; set; }
-    public int G { get; set; }
-    public int H { get; set; }
-    public int F { get; set; }
+    public float G { get; set; }
+    public float H { get; set; }
+    public float F { get; set; }
 }

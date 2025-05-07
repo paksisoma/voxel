@@ -217,6 +217,13 @@ public class NPC : MonoBehaviour
         hasGoal = true;
     }
 
+    public void ClearPath()
+    {
+        pathList.Clear();
+        pathIndex = 0;
+        hasGoal = false;
+    }
+
     public void AttackEffect(Vector3 attackerPosition)
     {
         additionalVelocity = (transform.position - attackerPosition).normalized * 10f;
