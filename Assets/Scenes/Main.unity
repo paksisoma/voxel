@@ -2879,6 +2879,7 @@ MonoBehaviour:
   content: {fileID: 1481464134}
   rowPrefab: {fileID: 4513936349525252011, guid: 7a68bc28e001de74e887a348748c0fa9, type: 3}
   craftables:
+  - {fileID: 11400000, guid: 6f619ef6dda5eba49849ad9f12214713, type: 2}
   - {fileID: 11400000, guid: 8c1ce7545f83df14db050346ac636c11, type: 2}
   - {fileID: 11400000, guid: 04f724d99cbc0b64780ffe9e757ec2e3, type: 2}
   - {fileID: 11400000, guid: 266e529d46614914b8bd4371f84f77c6, type: 2}
@@ -3288,6 +3289,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ef50bc7e53f484642b249e809b975ced, type: 2}
   - {fileID: 11400000, guid: 8f92c806c5b3c04469b91bafc4d4852d, type: 2}
   - {fileID: 11400000, guid: 3ccff2f011dc9844a85526a0222c2710, type: 2}
+  - {fileID: 11400000, guid: ab5d0e043bfc6874997846d34984c48a, type: 2}
 --- !u!1 &395578819
 GameObject:
   m_ObjectHideFlags: 0

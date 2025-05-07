@@ -38,6 +38,8 @@ public class Tree : SpecialObject
         {
             Destroy(transform.gameObject);
 
+            InventoryManager.Instance.AddItem(120);
+
             // Tutorial
             TutorialManager.Instance.NextTask(12);
         }
