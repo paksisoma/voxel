@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class TimeCycle : MonoBehaviour
 {
@@ -18,14 +19,21 @@ public class TimeCycle : MonoBehaviour
     private float startAmbient, targetAmbient;
     private float startBlend, targetBlend;
 
+    [HideInInspector]
+    public uint survivedDays = 0;
+    public Text survivedText;
+
     private void Awake()
     {
         if (Instance == null)
             Instance = this;
         else
             Destroy(gameObject);
+    }
 
-        ChangeDay(rotation <= 180f, true);
+    private void Start()
+    {
+        UpdateSurvivedDays();
     }
 
     private void Update()
@@ -58,5 +66,23 @@ public class TimeCycle : MonoBehaviour
 
         startBlend = material.GetFloat("_Blend");
         targetBlend = day ? 0f : 1f;
+
+        if (value && instant == false)
+        {
+            survivedDays++;
+            UpdateSurvivedDays();
+            Debug.Log("Most: " + survivedDays);
+        }
+    }
+
+    public void ChangeTime(float rotation)
+    {
+        ChangeDay(rotation <= 180f, true);
+        this.rotation = rotation;
+    }
+
+    private void UpdateSurvivedDays()
+    {
+        survivedText.text = "Survived days: " + survivedDays;
     }
 }

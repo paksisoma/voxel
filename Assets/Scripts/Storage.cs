@@ -101,7 +101,7 @@ public static class Storage
         File.Create(characterPath).Close();
 
         SetWorld(new StorageWorld(Application.version, Application.unityVersion, seed, 0, INIT_TIME, 0)); // Init map data
-        SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, 0, 0, 0, new List<StorageItem>())); // Init character data
+        SetCharacter(new StorageCharacter(INIT_HEALTH, INIT_THIRST, INIT_HUNGER, INIT_TEMPERATURE, new Vector3(0, 0, 0), 0, 0, 0, 0, 0, new List<StorageItem>())); // Init character data
     }
 
     public static void SaveBlocks(Vector3Int chunkPosition, List<StorageBlockData> blocks)
@@ -372,6 +372,7 @@ public static class Storage
             writer.Write(character.rotation); // Rotation
             writer.Write(character.yaw); // Yaw
             writer.Write(character.pitch); // Pitch
+            writer.Write(character.survivedDays); // Survived days
 
             writer.Write(character.armor); // Armor
 
@@ -399,6 +400,7 @@ public static class Storage
             float rotation = reader.ReadSingle(); // Rotation
             float yaw = reader.ReadSingle(); // Yaw
             float pitch = reader.ReadSingle(); // Pitch
+            uint survivedDays = reader.ReadUInt32(); // Survived days
 
             byte armor = reader.ReadByte(); // Armor
 
@@ -413,7 +415,7 @@ public static class Storage
                 inventory.Add(new StorageItem(slot, id, quantity)); // Add item to inventory
             }
 
-            return new StorageCharacter(health, thirst, hunger, temperature, new Vector3(x, y, z), rotation, yaw, pitch, armor, inventory); // Return character data
+            return new StorageCharacter(health, thirst, hunger, temperature, new Vector3(x, y, z), rotation, yaw, pitch, survivedDays, armor, inventory); // Return character data
         }
     }
 
@@ -494,10 +496,11 @@ public struct StorageCharacter
     public float rotation;
     public float yaw;
     public float pitch;
+    public uint survivedDays;
     public byte armor;
     public List<StorageItem> inventory;
 
-    public StorageCharacter(float health, float thirst, float hunger, float temperature, Vector3 position, float rotation, float yaw, float pitch, byte armor, List<StorageItem> inventory)
+    public StorageCharacter(float health, float thirst, float hunger, float temperature, Vector3 position, float rotation, float yaw, float pitch, uint survivedDays, byte armor, List<StorageItem> inventory)
     {
         this.health = health;
         this.thirst = thirst;
@@ -507,6 +510,7 @@ public struct StorageCharacter
         this.rotation = rotation;
         this.yaw = yaw;
         this.pitch = pitch;
+        this.survivedDays = survivedDays;
         this.armor = armor;
         this.inventory = inventory;
     }

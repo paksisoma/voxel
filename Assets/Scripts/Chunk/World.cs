@@ -131,7 +131,7 @@ public class World : MonoBehaviour
     {
         storageWorld = Storage.GetWorld();
         Seed.seed = storageWorld.seed;
-        TimeCycle.Instance.rotation = storageWorld.time;
+        TimeCycle.Instance.ChangeTime(storageWorld.time);
         TutorialManager.Instance.currentTask = storageWorld.task;
     }
 
@@ -146,6 +146,8 @@ public class World : MonoBehaviour
 
         storageCharacter.yaw = ThirdPersonCamera.Instance.yaw;
         storageCharacter.pitch = ThirdPersonCamera.Instance.pitch;
+
+        storageCharacter.survivedDays = TimeCycle.Instance.survivedDays;
 
         if (InventoryManager.Instance.activeArmor == null)
             storageCharacter.armor = 0;
@@ -170,6 +172,8 @@ public class World : MonoBehaviour
 
         ThirdPersonCamera.Instance.yaw = storageCharacter.yaw;
         ThirdPersonCamera.Instance.pitch = storageCharacter.pitch;
+
+        TimeCycle.Instance.survivedDays = storageCharacter.survivedDays;
 
         if (storageCharacter.armor != 0)
             InventoryManager.Instance.AddArmor(storageCharacter.armor);
