@@ -30,6 +30,9 @@ public class InventoryManager : MonoBehaviour
             Instance = this;
         else
             Destroy(gameObject);
+
+        foreach (var item in slots)
+            item.Init();
     }
 
     public void AddItem(Item item)

@@ -9,7 +9,7 @@ public class InventorySlot : MonoBehaviour, IDropHandler, IPointerClickHandler
     private Color defaultColor;
     public Color activeColor;
 
-    private void Awake()
+    public void Init()
     {
         slot = transform.GetComponent<Image>();
         defaultColor = slot.color;

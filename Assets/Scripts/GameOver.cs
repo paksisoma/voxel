@@ -31,7 +31,10 @@ public class GameOver : MonoBehaviour
         List<InventoryItem> items = InventoryManager.Instance.GetItems();
 
         foreach (InventoryItem item in items)
+        {
             item.quantity = 0;
+            item.UpdateQuantity();
+        }
 
         Player.Instance.WarpPlayer(Vector3.zero);
 
