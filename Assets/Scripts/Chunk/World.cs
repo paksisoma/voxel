@@ -41,7 +41,6 @@ public class World : MonoBehaviour
 
     private StorageWorld storageWorld;
     private StorageCharacter storageCharacter;
-    private bool initPlayer = false;
 
     private void Awake()
     {
@@ -133,6 +132,8 @@ public class World : MonoBehaviour
         Seed.seed = storageWorld.seed;
         TimeCycle.Instance.ChangeTime(storageWorld.time);
         TutorialManager.Instance.currentTask = storageWorld.task;
+
+        storageWorld.visit++;
     }
 
     private void SaveCharacter()
@@ -227,16 +228,6 @@ public class World : MonoBehaviour
                 GenerateChunk(chunkPosition);
                 await UniTask.Yield();
             }
-        }
-
-        // Load player after chunk generation
-        if (!initPlayer)
-        {
-            if (storageWorld.visit == 0)
-                Player.Instance.WarpPlayerUp(Vector2.zero);
-
-            storageWorld.visit++;
-            initPlayer = true;
         }
 
         render = false;
