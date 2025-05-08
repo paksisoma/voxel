@@ -3412,13 +3412,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62d5ec1a41cb48d449d10cc7da495155, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resolutionDropdown: {fileID: 143469239}
-  displayModeDropdown: {fileID: 2072140830}
-  vsyncDropdown: {fileID: 953965891}
   fpsSlider: {fileID: 778984672}
   fpsLabel: {fileID: 851849458}
+  resolutionDropdown: {fileID: 143469239}
   renderDistanceSlider: {fileID: 1360982464}
   renderDistanceLabel: {fileID: 1250362839}
+  vsyncDropdown: {fileID: 953965891}
+  displayModeDropdown: {fileID: 2072140830}
 --- !u!1 &1218305076
 GameObject:
   m_ObjectHideFlags: 0
@@ -4662,7 +4662,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Rendere Distance
+  m_Text: Render Distance
 --- !u!222 &1667716061
 CanvasRenderer:
   m_ObjectHideFlags: 0

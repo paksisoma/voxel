@@ -940,7 +940,7 @@ GameObject:
   m_Component:
   - component: {fileID: 153413305}
   m_Layer: 5
-  m_Name: Render Distannce
+  m_Name: Render Distance
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3035,8 +3035,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 48.590015, y: -7.1189594}
-  m_SizeDelta: {x: 87.18003, y: 0}
+  m_AnchoredPosition: {x: 49.50045, y: -7.0859585}
+  m_SizeDelta: {x: 89.0009, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &361833921
 MonoBehaviour:
@@ -9192,7 +9192,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Rendere Distance
+  m_Text: Render Distance
 --- !u!222 &1230746153
 CanvasRenderer:
   m_ObjectHideFlags: 0
